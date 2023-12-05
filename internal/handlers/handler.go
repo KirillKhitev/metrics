@@ -42,10 +42,8 @@ func (ch *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch typeMetric {
 	case "counter":
 		updateCounter(ch, w, nameMetric, valueMetric)
-		break
 	case "gauge":
 		updateGauge(ch, w, nameMetric, valueMetric)
-		break
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 	}
