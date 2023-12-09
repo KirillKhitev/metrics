@@ -234,7 +234,7 @@ func TestMemStorage_UpdateCounter(t *testing.T) {
 				require.NotNil(t, err)
 			}
 
-			val, err := s.GetCounter(tt.args.name)
+			val, _ := s.GetCounter(tt.args.name)
 
 			require.Equal(t, tt.wantValue, val)
 		})
@@ -306,7 +306,7 @@ func TestMemStorage_UpdateGauge(t *testing.T) {
 				require.NotNil(t, err)
 			}
 
-			val, err := s.GetGauge(tt.args.name)
+			val, _ := s.GetGauge(tt.args.name)
 
 			require.Equal(t, tt.wantValue, val)
 		})

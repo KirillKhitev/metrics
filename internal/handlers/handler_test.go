@@ -161,6 +161,8 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 
 			assert.Equal(t, tt.want.code, res.StatusCode)
 
+			defer res.Body.Close()
+
 			if tt.args.name != "" {
 				valCounter, _ := ch.Storage.GetCounter(tt.args.name)
 				assert.Equal(t, tt.want.counterValue, valCounter)
