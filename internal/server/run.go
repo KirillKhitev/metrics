@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/KirillKhitev/metrics/internal/config"
 	"github.com/KirillKhitev/metrics/internal/handlers"
 	"github.com/KirillKhitev/metrics/internal/storage"
 	"net/http"
@@ -18,7 +19,6 @@ func Run() error {
 	}
 
 	mux.Handle(`/update/`, updateHandler)
-	mux.HandleFunc(`/`, handlers.AllPageHandler)
 
-	return http.ListenAndServe(`:8080`, mux)
+	return http.ListenAndServe(config.ServerHost+config.ServerPort, mux)
 }

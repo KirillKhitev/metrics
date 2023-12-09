@@ -49,10 +49,6 @@ func (ch *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AllPageHandler(w http.ResponseWriter, r *http.Request) {
-	http.NotFound(w, r)
-}
-
 func updateCounter(ch *UpdateHandler, w http.ResponseWriter, n string, v string) {
 	value, err := strconv.ParseInt(v, 10, 64)
 

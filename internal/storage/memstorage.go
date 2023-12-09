@@ -23,3 +23,11 @@ func (s *MemStorage) Init() error {
 
 	return nil
 }
+
+func (s *MemStorage) GetCounter(name string) (int64, error) {
+	return s.counter[name], nil
+}
+
+func (s *MemStorage) GetGauge(name string) (float64, error) {
+	return s.gauge[name], nil
+}
