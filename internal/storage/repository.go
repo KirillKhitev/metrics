@@ -7,5 +7,8 @@ type Repository interface {
 	UpdateGauge(name string, value float64) error
 	GetGauge(name string) (float64, error)
 
+	GetCounterList() map[string]int64
+	GetGaugeList() map[string]float64
+
 	Init() error
 }

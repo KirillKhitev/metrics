@@ -1,5 +1,7 @@
 package storage
 
+import "errors"
+
 type MemStorage struct {
 	counter map[string]int64
 	gauge   map[string]float64
@@ -25,9 +27,31 @@ func (s *MemStorage) Init() error {
 }
 
 func (s *MemStorage) GetCounter(name string) (int64, error) {
-	return s.counter[name], nil
+	var err error
+	v, ok := s.counter[name]
+
+	if !ok {
+		err = errors.New("Not found")
+	}
+
+	return v, err
 }
 
 func (s *MemStorage) GetGauge(name string) (float64, error) {
-	return s.gauge[name], nil
+	var err error
+	v, ok := s.gauge[name]
+
+	if !ok {
+		err = errors.New("Not found")
+	}
+
+	return v, err
+}
+
+func (s *MemStorage) GetCounterList() map[string]int64 {
+	return s.counter
+}
+
+func (s *MemStorage) GetGaugeList() map[string]float64 {
+	return s.gauge
 }

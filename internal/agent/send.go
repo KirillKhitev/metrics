@@ -3,12 +3,12 @@ package agent
 import (
 	"fmt"
 	"github.com/KirillKhitev/metrics/internal/config"
-	"net/http"
+	"github.com/go-resty/resty/v2"
 )
 
-func SendUpdate(t, name, value string) (*http.Response, error) {
+func SendUpdate(client *resty.Client, t, name, value string) (*resty.Response, error) {
 	url := fmt.Sprintf("http://%s%s/update/%s/%s/%s", config.ServerHost, config.ServerPort, t, name, value)
-	resp, err := http.Post(url, "text/plain", nil)
+	resp, err := client.R().Post(url)
 
 	return resp, err
 }

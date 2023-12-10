@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"math/rand"
 	"reflect"
 	"runtime"
@@ -36,8 +37,8 @@ var runtimeMetricsNames = []string{
 	"TotalAlloc",
 }
 
-func PrepareGaugeForSend(memStats *runtime.MemStats) (gauge map[string]float64) {
-	gauge = make(map[string]float64)
+func PrepareGaugeForSend(memStats *runtime.MemStats) (gauge map[string]string) {
+	gauge = make(map[string]string)
 
 	for _, name := range runtimeMetricsNames {
 		val := reflect.ValueOf(*memStats).FieldByName(name)
@@ -52,17 +53,17 @@ func PrepareGaugeForSend(memStats *runtime.MemStats) (gauge map[string]float64) 
 			value = float64(val.Uint())
 		}
 
-		gauge[name] = value
+		gauge[name] = fmt.Sprintf("%f", value)
 	}
 
-	gauge["RandomValue"] = rand.Float64()
+	gauge["RandomValue"] = fmt.Sprintf("%f", rand.Float64())
 
 	return
 }
 
-func PrepareCounterForSend(PollCount int64) (counter map[string]int64) {
-	counter = make(map[string]int64)
-	counter["PollCount"] = PollCount
+func PrepareCounterForSend(PollCount int64) (counter map[string]string) {
+	counter = make(map[string]string)
+	counter["PollCount"] = fmt.Sprintf("%d", PollCount)
 
 	return
 }

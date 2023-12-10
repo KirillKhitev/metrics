@@ -27,27 +27,17 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 		want want
 	}{
 		{
-			name: "negative test GET #1",
+			name: "negative test empty type metric #1",
 			args: args{
-				method: http.MethodGet,
+				method: http.MethodPost,
 				addr:   `/update/`,
 			},
 			want: want{
-				code: http.StatusMethodNotAllowed,
+				code: http.StatusBadRequest,
 			},
 		},
 		{
-			name: "negative test empty type metric #2",
-			args: args{
-				method: http.MethodGet,
-				addr:   `/update/`,
-			},
-			want: want{
-				code: http.StatusMethodNotAllowed,
-			},
-		},
-		{
-			name: "negative test wrong type metric #3",
+			name: "negative test wrong type metric #2",
 			args: args{
 				method: http.MethodPost,
 				addr:   `/update/wrong_type/Alloc/10`,
@@ -57,7 +47,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			},
 		},
 		{
-			name: "negative test empty name metric #4",
+			name: "negative test empty name metric #3",
 			args: args{
 				method: http.MethodPost,
 				addr:   `/update/counter/`,
@@ -67,7 +57,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			},
 		},
 		{
-			name: "negative test empty value metric #5",
+			name: "negative test empty value metric #4",
 			args: args{
 				method: http.MethodPost,
 				addr:   `/update/counter/Alloc/`,
@@ -77,7 +67,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			},
 		},
 		{
-			name: "positive test counter metric #6",
+			name: "positive test counter metric #5",
 			args: args{
 				method:       http.MethodPost,
 				addr:         `/update/counter/Alloc/10`,
@@ -92,7 +82,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			},
 		},
 		{
-			name: "positive test counter metric #7",
+			name: "positive test counter metric #6",
 			args: args{
 				method:       http.MethodPost,
 				addr:         `/update/counter/Alloc/-10`,
@@ -107,7 +97,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			},
 		},
 		{
-			name: "positive test gauge metric #8",
+			name: "positive test gauge metric #7",
 			args: args{
 				method:       http.MethodPost,
 				addr:         `/update/gauge/Alloc/15.50`,
@@ -122,7 +112,7 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			},
 		},
 		{
-			name: "positive test gauge metric #9",
+			name: "positive test gauge metric #8",
 			args: args{
 				method:       http.MethodPost,
 				addr:         `/update/gauge/Alloc/-15.50`,

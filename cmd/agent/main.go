@@ -5,6 +5,7 @@ import (
 	"github.com/KirillKhitev/metrics/internal/agent"
 	"github.com/KirillKhitev/metrics/internal/config"
 	"github.com/KirillKhitev/metrics/internal/metrics"
+	"github.com/go-resty/resty/v2"
 	"runtime"
 	"sync"
 	"time"
@@ -34,17 +35,28 @@ func main() {
 		<-tickerSendMetrics
 		mu.Lock()
 
-		counter := metrics.PrepareCounterForSend(PollCount)
-		gauge := metrics.PrepareGaugeForSend(&memStats)
-
-		for name, value := range counter {
-			_, _ = agent.SendUpdate("counter", name, fmt.Sprintf("%d", value))
-		}
-
-		for name, value := range gauge {
-			_, _ = agent.SendUpdate("gauge", name, fmt.Sprintf("%f", value))
-		}
+		sendDataToServer(&memStats, PollCount)
 
 		mu.Unlock()
+	}
+}
+
+func sendDataToServer(m *runtime.MemStats, PollCount int64) {
+	client := resty.New()
+
+	for name, value := range metrics.PrepareCounterForSend(PollCount) {
+		_, err := agent.SendUpdate(client, "counter", name, value)
+
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	for name, value := range metrics.PrepareGaugeForSend(m) {
+		_, err := agent.SendUpdate(client, "gauge", name, value)
+
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
