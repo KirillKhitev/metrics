@@ -31,7 +31,7 @@ func (s *MemStorage) GetCounter(name string) (int64, error) {
 	v, ok := s.counter[name]
 
 	if !ok {
-		err = errors.New("Not found")
+		err = errors.New("not found")
 	}
 
 	return v, err
@@ -42,7 +42,7 @@ func (s *MemStorage) GetGauge(name string) (float64, error) {
 	v, ok := s.gauge[name]
 
 	if !ok {
-		err = errors.New("Not found")
+		err = errors.New("not found")
 	}
 
 	return v, err
