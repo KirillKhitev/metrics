@@ -18,7 +18,7 @@ func main() {
 	mu := new(sync.Mutex)
 
 	go func() {
-		tickerUpdateMetrics := time.Tick(flagPollInterval)
+		tickerUpdateMetrics := time.Tick(time.Second * time.Duration(flagPollInterval))
 
 		for {
 			<-tickerUpdateMetrics
@@ -29,7 +29,7 @@ func main() {
 		}
 	}()
 
-	tickerSendMetrics := time.Tick(flagReportInterval)
+	tickerSendMetrics := time.Tick(time.Second * time.Duration(flagReportInterval))
 
 	for {
 		<-tickerSendMetrics
