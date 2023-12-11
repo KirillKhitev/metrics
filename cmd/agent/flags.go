@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -26,7 +25,7 @@ func parseFlags() {
 		if val, err := strconv.Atoi(envPollInterval); err == nil {
 			flagPollInterval = val
 		} else {
-			log.Println(fmt.Sprintf("wrong value environment POLL_INTERVAL: %s", envPollInterval))
+			log.Printf("wrong value environment POLL_INTERVAL: %s", envPollInterval)
 		}
 	}
 
@@ -34,7 +33,7 @@ func parseFlags() {
 		if val, err := strconv.Atoi(envReportInterval); err == nil {
 			flagReportInterval = val
 		} else {
-			log.Println(fmt.Sprintf("wrong value environment REPORT_INTERVAL: %s", flagReportInterval))
+			log.Printf("wrong value environment REPORT_INTERVAL: %s", envReportInterval)
 		}
 	}
 }
