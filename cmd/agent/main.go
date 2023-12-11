@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/KirillKhitev/metrics/internal/agent"
-	"github.com/KirillKhitev/metrics/internal/config"
 	"github.com/KirillKhitev/metrics/internal/metrics"
 	"github.com/go-resty/resty/v2"
 	"runtime"
@@ -12,13 +10,15 @@ import (
 )
 
 func main() {
+	parseFlags()
+
 	var PollCount int64
 	var memStats runtime.MemStats
 
 	mu := new(sync.Mutex)
 
 	go func() {
-		tickerUpdateMetrics := time.Tick(time.Second * config.PollInterval)
+		tickerUpdateMetrics := time.Tick(flagPollInterval)
 
 		for {
 			<-tickerUpdateMetrics
@@ -29,7 +29,7 @@ func main() {
 		}
 	}()
 
-	tickerSendMetrics := time.Tick(time.Second * config.ReportInterval)
+	tickerSendMetrics := time.Tick(flagReportInterval)
 
 	for {
 		<-tickerSendMetrics
@@ -45,7 +45,7 @@ func sendDataToServer(m *runtime.MemStats, PollCount int64) {
 	client := resty.New()
 
 	for name, value := range metrics.PrepareCounterForSend(PollCount) {
-		_, err := agent.SendUpdate(client, "counter", name, value)
+		_, err := sendUpdate(client, "counter", name, value)
 
 		if err != nil {
 			fmt.Println(err)
@@ -53,10 +53,17 @@ func sendDataToServer(m *runtime.MemStats, PollCount int64) {
 	}
 
 	for name, value := range metrics.PrepareGaugeForSend(m) {
-		_, err := agent.SendUpdate(client, "gauge", name, value)
+		_, err := sendUpdate(client, "gauge", name, value)
 
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
+}
+
+func sendUpdate(client *resty.Client, t, name, value string) (*resty.Response, error) {
+	url := fmt.Sprintf("http://%s/update/%s/%s/%s", flagAddrRun, t, name, value)
+	resp, err := client.R().Post(url)
+
+	return resp, err
 }
