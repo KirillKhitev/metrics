@@ -57,23 +57,6 @@ func TestPrepareGaugeForSend(t *testing.T) {
 		memStats *runtime.MemStats
 	}
 
-	stats1 := new(runtime.MemStats)
-
-	*stats1 = runtime.MemStats{
-		Alloc:         1000,
-		BuckHashSys:   2000,
-		GCCPUFraction: 10123.45,
-	}
-
-	stats2 := new(runtime.MemStats)
-
-	*stats2 = runtime.MemStats{
-		Alloc:         10000099,
-		BuckHashSys:   0,
-		Frees:         1000000,
-		GCCPUFraction: -10123456.45,
-	}
-
 	tests := []struct {
 		name      string
 		args      args
@@ -82,7 +65,11 @@ func TestPrepareGaugeForSend(t *testing.T) {
 		{
 			name: "positive test #1",
 			args: args{
-				memStats: stats1,
+				memStats: &runtime.MemStats{
+					Alloc:         1000,
+					BuckHashSys:   2000,
+					GCCPUFraction: 10123.45,
+				},
 			},
 			wantGauge: map[string]string{
 				"Alloc":         "1000.000000",
@@ -118,7 +105,12 @@ func TestPrepareGaugeForSend(t *testing.T) {
 		{
 			name: "positive test #2",
 			args: args{
-				memStats: stats2,
+				memStats: &runtime.MemStats{
+					Alloc:         10000099,
+					BuckHashSys:   0,
+					Frees:         1000000,
+					GCCPUFraction: -10123456.45,
+				},
 			},
 			wantGauge: map[string]string{
 				"Alloc":         "10000099.000000",

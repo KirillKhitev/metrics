@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestValueHandler_ServeHTTP(t *testing.T) {
+func TestGetHandler_ServeHTTP(t *testing.T) {
 	type want struct {
 		code int
 		body string
@@ -139,7 +139,7 @@ func TestValueHandler_ServeHTTP(t *testing.T) {
 				appStorage.UpdateGauge(name, value)
 			}
 
-			ch := &ValueHandler{
+			ch := &GetHandler{
 				Storage: appStorage,
 			}
 

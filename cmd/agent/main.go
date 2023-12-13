@@ -9,61 +9,66 @@ import (
 	"time"
 )
 
-func main() {
-	parseFlags()
+type agent struct {
+	sync.Mutex
+	client    *resty.Client
+	data      runtime.MemStats
+	pollCount int64
+}
 
-	var PollCount int64
-	var memStats runtime.MemStats
-
-	mu := new(sync.Mutex)
-
-	go func() {
-		tickerUpdateMetrics := time.Tick(time.Second * time.Duration(flagPollInterval))
-
-		for {
-			<-tickerUpdateMetrics
-			mu.Lock()
-			runtime.ReadMemStats(&memStats)
-			PollCount++
-			mu.Unlock()
-		}
-	}()
-
-	tickerSendMetrics := time.Tick(time.Second * time.Duration(flagReportInterval))
+func (a *agent) getMetrics() {
+	ticker := time.Tick(time.Second * time.Duration(flags.PollInterval))
 
 	for {
-		<-tickerSendMetrics
-		mu.Lock()
-
-		sendDataToServer(&memStats, PollCount)
-
-		mu.Unlock()
+		<-ticker
+		a.Lock()
+		runtime.ReadMemStats(&a.data)
+		a.pollCount++
+		a.Unlock()
 	}
 }
 
-func sendDataToServer(m *runtime.MemStats, PollCount int64) {
-	client := resty.New()
+func (a *agent) sendMetrics() {
+	ticker := time.Tick(time.Second * time.Duration(flags.ReportInterval))
 
-	for name, value := range metrics.PrepareCounterForSend(PollCount) {
-		_, err := sendUpdate(client, "counter", name, value)
+	for {
+		<-ticker
+		a.Lock()
 
-		if err != nil {
-			fmt.Println(err)
+		for name, value := range metrics.PrepareCounterForSend(a.pollCount) {
+			_, err := a.sendUpdate("counter", name, value)
+
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
-	}
 
-	for name, value := range metrics.PrepareGaugeForSend(m) {
-		_, err := sendUpdate(client, "gauge", name, value)
+		for name, value := range metrics.PrepareGaugeForSend(&a.data) {
+			_, err := a.sendUpdate("gauge", name, value)
 
-		if err != nil {
-			fmt.Println(err)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
+
+		a.Unlock()
 	}
 }
 
-func sendUpdate(client *resty.Client, t, name, value string) (*resty.Response, error) {
-	url := fmt.Sprintf("http://%s/update/%s/%s/%s", flagAddrRun, t, name, value)
-	resp, err := client.R().Post(url)
+func (a *agent) sendUpdate(typeMetric, name, value string) (*resty.Response, error) {
+	url := fmt.Sprintf("http://%s/update/%s/%s/%s", flags.AddrRun, typeMetric, name, value)
+	resp, err := a.client.R().Post(url)
 
 	return resp, err
+}
+
+func main() {
+	agent := agent{}
+	agent.client = resty.New()
+
+	flags.ParseFlags()
+
+	go agent.getMetrics()
+
+	agent.sendMetrics()
 }

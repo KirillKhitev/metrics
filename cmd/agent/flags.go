@@ -7,23 +7,27 @@ import (
 	"strconv"
 )
 
-var flagAddrRun string
-var flagPollInterval int
-var flagReportInterval int
+var flags flagsAgent = flagsAgent{}
 
-func parseFlags() {
-	flag.StringVar(&flagAddrRun, "a", "localhost:8080", "address and port to run server")
-	flag.IntVar(&flagPollInterval, "p", 2, "poll metrics interval")
-	flag.IntVar(&flagReportInterval, "r", 10, "send metrics report interval")
+type flagsAgent struct {
+	AddrRun        string
+	PollInterval   int
+	ReportInterval int
+}
+
+func (f *flagsAgent) ParseFlags() {
+	flag.StringVar(&f.AddrRun, "a", "localhost:8080", "address and port to run server")
+	flag.IntVar(&f.PollInterval, "p", 2, "poll metrics interval")
+	flag.IntVar(&f.ReportInterval, "r", 10, "send metrics report interval")
 	flag.Parse()
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
-		flagAddrRun = envRunAddr
+		f.AddrRun = envRunAddr
 	}
 
 	if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
 		if val, err := strconv.Atoi(envPollInterval); err == nil {
-			flagPollInterval = val
+			f.PollInterval = val
 		} else {
 			log.Printf("wrong value environment POLL_INTERVAL: %s", envPollInterval)
 		}
@@ -31,7 +35,7 @@ func parseFlags() {
 
 	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
 		if val, err := strconv.Atoi(envReportInterval); err == nil {
-			flagReportInterval = val
+			f.ReportInterval = val
 		} else {
 			log.Printf("wrong value environment REPORT_INTERVAL: %s", envReportInterval)
 		}

@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-type ValueHandler struct {
+type GetHandler struct {
 	Storage storage.MemStorage
 }
 
-func (ch *ValueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (ch *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return

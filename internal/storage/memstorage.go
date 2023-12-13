@@ -26,26 +26,26 @@ func (s *MemStorage) Init() error {
 	return nil
 }
 
-func (s *MemStorage) GetCounter(name string) (int64, error) {
-	var err error
+var ErrNotFound = errors.New("not found")
+
+func (s *MemStorage) GetCounter(name string) (v int64, err error) {
 	v, ok := s.counter[name]
 
 	if !ok {
-		err = errors.New("not found")
+		return v, ErrNotFound
 	}
 
-	return v, err
+	return v, nil
 }
 
-func (s *MemStorage) GetGauge(name string) (float64, error) {
-	var err error
+func (s *MemStorage) GetGauge(name string) (v float64, err error) {
 	v, ok := s.gauge[name]
 
 	if !ok {
-		err = errors.New("not found")
+		return v, ErrNotFound
 	}
 
-	return v, err
+	return v, nil
 }
 
 func (s *MemStorage) GetCounterList() map[string]int64 {

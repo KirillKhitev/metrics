@@ -6,6 +6,12 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+type Handlers struct {
+	Update handlers.UpdateHandler
+	List   handlers.ListHandler
+	Get    handlers.GetHandler
+}
+
 func GetRouter() chi.Router {
 	r := chi.NewRouter()
 
@@ -14,27 +20,27 @@ func GetRouter() chi.Router {
 		panic(err)
 	}
 
-	updateHandler := &handlers.UpdateHandler{
-		Storage: appStorage,
-	}
-
-	listHandler := &handlers.ListHandler{
-		Storage: appStorage,
-	}
-
-	valueHandler := &handlers.ValueHandler{
-		Storage: appStorage,
+	var myHandlers = Handlers{
+		Update: handlers.UpdateHandler{
+			Storage: appStorage,
+		},
+		List: handlers.ListHandler{
+			Storage: appStorage,
+		},
+		Get: handlers.GetHandler{
+			Storage: appStorage,
+		},
 	}
 
 	r.Route("/", func(r chi.Router) {
-		r.Handle("/", listHandler)
+		r.Handle("/", &myHandlers.List)
 		r.Route("/update", func(r chi.Router) {
 			r.Post("/", handlers.BadRequestHandle)
 			r.Route("/{typeMetric}", func(r chi.Router) {
 				r.Post("/", handlers.NotFoundHandle)
 				r.Route("/{nameMetric}", func(r chi.Router) {
 					r.Post("/", handlers.BadRequestHandle)
-					r.Handle("/{valueMetric}", updateHandler)
+					r.Handle("/{valueMetric}", &myHandlers.Update)
 				})
 			})
 		})
@@ -42,7 +48,7 @@ func GetRouter() chi.Router {
 			r.Get("/", handlers.BadRequestHandle)
 			r.Route("/{typeMetric}", func(r chi.Router) {
 				r.Get("/", handlers.NotFoundHandle)
-				r.Handle("/{nameMetric}", valueHandler)
+				r.Handle("/{nameMetric}", &myHandlers.Get)
 			})
 		})
 	})
