@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/KirillKhitev/metrics/internal/metrics"
 	"github.com/go-resty/resty/v2"
+	"log"
 	"runtime"
 	"sync"
 	"time"
@@ -39,7 +40,7 @@ func (a *agent) sendMetrics() {
 			_, err := a.sendUpdate("counter", name, value)
 
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 			}
 		}
 
@@ -47,7 +48,7 @@ func (a *agent) sendMetrics() {
 			_, err := a.sendUpdate("gauge", name, value)
 
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 			}
 		}
 
