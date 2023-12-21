@@ -59,4 +59,5 @@ func (ch *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte(res))
+	w.WriteHeader(http.StatusOK)
 }
