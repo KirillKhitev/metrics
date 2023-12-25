@@ -9,9 +9,9 @@ import (
 	"strconv"
 )
 
-type UpdateJsonHandler MyHandler
+type UpdateJSONHandler MyHandler
 
-func (ch *UpdateJsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (ch *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return

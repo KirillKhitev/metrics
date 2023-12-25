@@ -8,9 +8,9 @@ import (
 	"net/http"
 )
 
-type GetJsonHandler MyHandler
+type GetJSONHandler MyHandler
 
-func (ch *GetJsonHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (ch *GetJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusBadRequest)
 		return

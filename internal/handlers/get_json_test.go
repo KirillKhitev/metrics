@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestGetJsonHandler_ServeHTTP(t *testing.T) {
+func TestGetJSONHandler_ServeHTTP(t *testing.T) {
 	type want struct {
 		code int
 		body string
@@ -80,7 +80,7 @@ func TestGetJsonHandler_ServeHTTP(t *testing.T) {
 			_ = appStorage.UpdateCounter("PollCount", 100)
 			_ = appStorage.UpdateGauge("Alloc", 3000.555)
 
-			ch := &GetJsonHandler{
+			ch := &GetJSONHandler{
 				Storage: appStorage,
 			}
 

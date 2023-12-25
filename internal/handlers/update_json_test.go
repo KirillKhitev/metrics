@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func TestUpdateJsonHandler_ServeHTTP(t *testing.T) {
+func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 	type want struct {
 		code int
 		body string
@@ -23,8 +23,8 @@ func TestUpdateJsonHandler_ServeHTTP(t *testing.T) {
 		metric metrics.Metrics
 	}
 
-	var alloc float64 = 300.55
-	var someMetric float64 = 55.7
+	alloc := 300.55
+	someMetric := 55.7
 	var pollCount int64 = 100
 
 	tests := []struct {
@@ -89,7 +89,7 @@ func TestUpdateJsonHandler_ServeHTTP(t *testing.T) {
 			appStorage.UpdateCounter("PollCounter", 30)
 			appStorage.UpdateGauge("Alloc", 125.20)
 
-			ch := &UpdateJsonHandler{
+			ch := &UpdateJSONHandler{
 				Storage: appStorage,
 			}
 
