@@ -47,7 +47,7 @@ func TestRouter(t *testing.T) {
 		{"/update/gauge/nameMetric/", http.StatusBadRequest, http.MethodPost},
 		{"/update/gauge/nameMetric/string", http.StatusBadRequest, http.MethodPost},
 		{"/update/gauge/nameMetric/10", http.StatusOK, http.MethodPost},
-		{"/value/", http.StatusMethodNotAllowed, http.MethodPost},
+		{"/value/", http.StatusInternalServerError, http.MethodPost},
 		{"/value/", http.StatusBadRequest, http.MethodGet},
 		{"/value/wrong_type/", http.StatusNotFound, http.MethodGet},
 		{"/value/wrong_type/Alloc", http.StatusBadRequest, http.MethodGet},

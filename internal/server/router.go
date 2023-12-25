@@ -7,9 +7,11 @@ import (
 )
 
 type Handlers struct {
-	Update handlers.UpdateHandler
-	List   handlers.ListHandler
-	Get    handlers.GetHandler
+	Update     handlers.UpdateHandler
+	UpdateJson handlers.UpdateJsonHandler
+	List       handlers.ListHandler
+	Get        handlers.GetHandler
+	GetJson    handlers.GetJsonHandler
 }
 
 func GetRouter() chi.Router {
@@ -24,10 +26,16 @@ func GetRouter() chi.Router {
 		Update: handlers.UpdateHandler{
 			Storage: appStorage,
 		},
+		UpdateJson: handlers.UpdateJsonHandler{
+			Storage: appStorage,
+		},
 		List: handlers.ListHandler{
 			Storage: appStorage,
 		},
 		Get: handlers.GetHandler{
+			Storage: appStorage,
+		},
+		GetJson: handlers.GetJsonHandler{
 			Storage: appStorage,
 		},
 	}
@@ -35,7 +43,7 @@ func GetRouter() chi.Router {
 	r.Route("/", func(r chi.Router) {
 		r.Handle("/", &myHandlers.List)
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/", handlers.BadRequestHandle)
+			r.Handle("/", &myHandlers.UpdateJson)
 			r.Route("/{typeMetric}", func(r chi.Router) {
 				r.Post("/", handlers.NotFoundHandle)
 				r.Route("/{nameMetric}", func(r chi.Router) {
@@ -45,7 +53,7 @@ func GetRouter() chi.Router {
 			})
 		})
 		r.Route("/value", func(r chi.Router) {
-			r.Get("/", handlers.BadRequestHandle)
+			r.Handle("/", &myHandlers.GetJson)
 			r.Route("/{typeMetric}", func(r chi.Router) {
 				r.Get("/", handlers.NotFoundHandle)
 				r.Handle("/{nameMetric}", &myHandlers.Get)

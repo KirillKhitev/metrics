@@ -2,13 +2,10 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/KirillKhitev/metrics/internal/storage"
 	"net/http"
 )
 
-type ListHandler struct {
-	Storage storage.MemStorage
-}
+type ListHandler MyHandler
 
 func (ch *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
