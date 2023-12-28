@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/KirillKhitev/metrics/internal/gzip"
 	"github.com/KirillKhitev/metrics/internal/logger"
 	"github.com/KirillKhitev/metrics/internal/server"
 	"go.uber.org/zap"
@@ -22,5 +23,5 @@ func run() error {
 
 	logger.Log.Info("Running server", zap.String("address", flagAddrRun))
 
-	return http.ListenAndServe(flagAddrRun, logger.RequestLogger(server.GetRouter()))
+	return http.ListenAndServe(flagAddrRun, logger.RequestLogger(gzip.Middleware(server.GetRouter())))
 }

@@ -70,4 +70,5 @@ func (ch *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(str)
+	w.WriteHeader(http.StatusOK)
 }
