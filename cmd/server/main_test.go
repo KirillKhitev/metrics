@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/KirillKhitev/metrics/internal/server"
+	"github.com/KirillKhitev/metrics/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -25,7 +26,13 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.
 }
 
 func TestRouter(t *testing.T) {
-	ts := httptest.NewServer(server.GetRouter())
+	appStorage := storage.MemStorage{}
+	if err := appStorage.Init(); err != nil {
+		t.Errorf("dont init appStorage")
+		return
+	}
+
+	ts := httptest.NewServer(server.GetRouter(appStorage))
 	defer ts.Close()
 
 	var testTable = []struct {
@@ -47,7 +54,7 @@ func TestRouter(t *testing.T) {
 		{"/update/gauge/nameMetric/", http.StatusBadRequest, http.MethodPost},
 		{"/update/gauge/nameMetric/string", http.StatusBadRequest, http.MethodPost},
 		{"/update/gauge/nameMetric/10", http.StatusOK, http.MethodPost},
-		{"/value/", http.StatusMethodNotAllowed, http.MethodPost},
+		{"/value/", http.StatusInternalServerError, http.MethodPost},
 		{"/value/", http.StatusBadRequest, http.MethodGet},
 		{"/value/wrong_type/", http.StatusNotFound, http.MethodGet},
 		{"/value/wrong_type/Alloc", http.StatusBadRequest, http.MethodGet},

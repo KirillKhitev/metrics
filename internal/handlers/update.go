@@ -1,15 +1,13 @@
 package handlers
 
 import (
-	"github.com/KirillKhitev/metrics/internal/storage"
+	"github.com/KirillKhitev/metrics/internal/dump"
+	"github.com/KirillKhitev/metrics/internal/flags"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
-type UpdateHandler struct {
-	Storage storage.MemStorage
-}
+type UpdateHandler MyHandler
 
 func (ch *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -39,45 +37,24 @@ func (ch *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	nameMetric := pathParts[3]
 	valueMetric := pathParts[4]
 
+	mh := MyHandler(*ch)
+	res := false
+
 	switch typeMetric {
 	case "counter":
-		updateCounter(ch, w, nameMetric, valueMetric)
+		res = updateCounter(&mh, w, nameMetric, valueMetric)
 	case "gauge":
-		updateGauge(ch, w, nameMetric, valueMetric)
+		res = updateGauge(&mh, w, nameMetric, valueMetric)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 	}
-}
 
-func updateCounter(ch *UpdateHandler, w http.ResponseWriter, n string, v string) {
-	value, err := strconv.ParseInt(v, 10, 64)
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	if !res {
 		return
 	}
 
-	err = ch.Storage.UpdateCounter(n, value)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func updateGauge(ch *UpdateHandler, w http.ResponseWriter, n string, v string) {
-	value, err := strconv.ParseFloat(v, 64)
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	err = ch.Storage.UpdateGauge(n, value)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	if flags.Args.StoreInterval == 0 {
+		dump.SaveStorageToFile(flags.Args.FileStoragePath, ch.Storage)
 	}
 
 	w.WriteHeader(http.StatusOK)
