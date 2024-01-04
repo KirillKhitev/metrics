@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/KirillKhitev/metrics/internal/dump"
+	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/logger"
 	"github.com/KirillKhitev/metrics/internal/metrics"
 	"go.uber.org/zap"
@@ -60,6 +62,10 @@ func (ch *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if !res {
 		return
+	}
+
+	if flags.Args.StoreInterval == 0 {
+		dump.SaveStorageToFile(flags.Args.FileStoragePath, ch.Storage)
 	}
 
 	str, err := json.MarshalIndent(request, "", "    ")

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/KirillKhitev/metrics/internal/server"
+	"github.com/KirillKhitev/metrics/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -25,7 +26,13 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.
 }
 
 func TestRouter(t *testing.T) {
-	ts := httptest.NewServer(server.GetRouter())
+	appStorage := storage.MemStorage{}
+	if err := appStorage.Init(); err != nil {
+		t.Errorf("dont init appStorage")
+		return
+	}
+
+	ts := httptest.NewServer(server.GetRouter(appStorage))
 	defer ts.Close()
 
 	var testTable = []struct {

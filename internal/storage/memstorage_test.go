@@ -56,8 +56,8 @@ func TestMemStorage_GetCounter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &MemStorage{
-				counter: tt.storage.counter,
-				gauge:   tt.storage.gauge,
+				Counter: tt.storage.counter,
+				Gauge:   tt.storage.gauge,
 			}
 			got, err := s.GetCounter(tt.args.name)
 			if (err != nil) != tt.wantErr {
@@ -122,8 +122,8 @@ func TestMemStorage_GetGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &MemStorage{
-				counter: tt.storage.counter,
-				gauge:   tt.storage.gauge,
+				Counter: tt.storage.counter,
+				Gauge:   tt.storage.gauge,
 			}
 			got, err := s.GetGauge(tt.args.name)
 			if (err != nil) != tt.wantErr {
@@ -224,8 +224,8 @@ func TestMemStorage_UpdateCounter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &MemStorage{
-				counter: tt.storage.counter,
-				gauge:   tt.storage.gauge,
+				Counter: tt.storage.counter,
+				Gauge:   tt.storage.gauge,
 			}
 
 			err := s.UpdateCounter(tt.args.name, tt.args.value)
@@ -296,8 +296,8 @@ func TestMemStorage_UpdateGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &MemStorage{
-				counter: tt.storage.counter,
-				gauge:   tt.storage.gauge,
+				Counter: tt.storage.counter,
+				Gauge:   tt.storage.gauge,
 			}
 
 			err := s.UpdateGauge(tt.args.name, tt.args.value)

@@ -14,13 +14,8 @@ type Handlers struct {
 	GetJSON    handlers.GetJSONHandler
 }
 
-func GetRouter() chi.Router {
+func GetRouter(appStorage storage.MemStorage) chi.Router {
 	r := chi.NewRouter()
-
-	appStorage := storage.MemStorage{}
-	if err := appStorage.Init(); err != nil {
-		panic(err)
-	}
 
 	var myHandlers = Handlers{
 		Update: handlers.UpdateHandler{

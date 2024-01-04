@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/KirillKhitev/metrics/internal/dump"
+	"github.com/KirillKhitev/metrics/internal/flags"
 	"net/http"
 	"strings"
 )
@@ -36,13 +38,24 @@ func (ch *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	valueMetric := pathParts[4]
 
 	mh := MyHandler(*ch)
+	res := false
 
 	switch typeMetric {
 	case "counter":
-		updateCounter(&mh, w, nameMetric, valueMetric)
+		res = updateCounter(&mh, w, nameMetric, valueMetric)
 	case "gauge":
-		updateGauge(&mh, w, nameMetric, valueMetric)
+		res = updateGauge(&mh, w, nameMetric, valueMetric)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 	}
+
+	if !res {
+		return
+	}
+
+	if flags.Args.StoreInterval == 0 {
+		dump.SaveStorageToFile(flags.Args.FileStoragePath, ch.Storage)
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
