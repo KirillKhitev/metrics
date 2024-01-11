@@ -48,7 +48,7 @@ func saveToFile(appStorage storage.MemStorage) {
 
 	terminateSignals := make(chan os.Signal, 1)
 
-	signal.Notify(terminateSignals, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
+	signal.Notify(terminateSignals, syscall.SIGINT, syscall.SIGTERM)
 
 	for {
 		select {
@@ -56,6 +56,7 @@ func saveToFile(appStorage storage.MemStorage) {
 			appStorage.SaveToFile()
 		case <-terminateSignals:
 			appStorage.SaveToFile()
+			os.Exit(1)
 		}
 	}
 }
