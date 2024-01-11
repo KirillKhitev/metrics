@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/KirillKhitev/metrics/internal/dump"
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"net/http"
 	"strings"
@@ -54,7 +53,7 @@ func (ch *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if flags.Args.StoreInterval == 0 {
-		dump.SaveStorageToFile(flags.Args.FileStoragePath, ch.Storage)
+		ch.Storage.SaveToFile()
 	}
 
 	w.WriteHeader(http.StatusOK)

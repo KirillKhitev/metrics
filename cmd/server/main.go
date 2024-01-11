@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/KirillKhitev/metrics/internal/dump"
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/gzip"
 	"github.com/KirillKhitev/metrics/internal/logger"
@@ -9,6 +8,9 @@ import (
 	"github.com/KirillKhitev/metrics/internal/storage"
 	"go.uber.org/zap"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -30,20 +32,30 @@ func run() error {
 		return err
 	}
 
-	if flags.Args.StoreInterval > 0 {
-		go func(appStorage storage.MemStorage) {
-			ticker := time.Tick(time.Second * time.Duration(flags.Args.StoreInterval))
-
-			for {
-				<-ticker
-				dump.SaveStorageToFile(flags.Args.FileStoragePath, appStorage)
-			}
-		}(appStorage)
-	}
-
-	defer dump.SaveStorageToFile(flags.Args.FileStoragePath, appStorage)
+	go saveToFile(appStorage)
 
 	logger.Log.Info("Running server", zap.String("address", flags.Args.AddrRun))
 
 	return http.ListenAndServe(flags.Args.AddrRun, logger.RequestLogger(gzip.Middleware(server.GetRouter(appStorage))))
+}
+
+func saveToFile(appStorage storage.MemStorage) {
+	ticker := make(<-chan time.Time)
+
+	if flags.Args.StoreInterval > 0 {
+		ticker = time.Tick(time.Second * time.Duration(flags.Args.StoreInterval))
+	}
+
+	terminateSignals := make(chan os.Signal, 1)
+
+	signal.Notify(terminateSignals, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
+
+	for {
+		select {
+		case <-ticker:
+			appStorage.SaveToFile()
+		case <-terminateSignals:
+			appStorage.SaveToFile()
+		}
+	}
 }

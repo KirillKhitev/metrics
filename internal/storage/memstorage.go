@@ -6,6 +6,7 @@ import (
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/logger"
 	"go.uber.org/zap"
+	"io"
 	"os"
 )
 
@@ -42,7 +43,7 @@ func (s *MemStorage) Init() error {
 
 	defer file.Close()
 
-	if err := json.NewDecoder(file).Decode(s); err != nil {
+	if err := json.NewDecoder(file).Decode(s); err != nil && err != io.EOF {
 		logger.Log.Error("Error by decode metrics from json", zap.Error(err))
 		return nil
 	}
@@ -78,4 +79,23 @@ func (s *MemStorage) GetCounterList() map[string]int64 {
 
 func (s *MemStorage) GetGaugeList() map[string]float64 {
 	return s.Gauge
+}
+
+func (s *MemStorage) SaveToFile() {
+	logger.Log.Info("Сохраняем метрики в файл")
+
+	file, err := os.OpenFile(flags.Args.FileStoragePath, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		logger.Log.Error("Error by export metrics to file from server", zap.Error(err))
+		return
+	}
+
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "    ")
+
+	if err := encoder.Encode(s); err != nil {
+		logger.Log.Error("Error by encode metrics to json", zap.Error(err))
+	}
 }
