@@ -12,6 +12,7 @@ type Handlers struct {
 	List       handlers.ListHandler
 	Get        handlers.GetHandler
 	GetJSON    handlers.GetJSONHandler
+	Ping       handlers.PingHandler
 }
 
 func GetRouter(appStorage storage.MemStorage) chi.Router {
@@ -31,6 +32,9 @@ func GetRouter(appStorage storage.MemStorage) chi.Router {
 			Storage: appStorage,
 		},
 		GetJSON: handlers.GetJSONHandler{
+			Storage: appStorage,
+		},
+		Ping: handlers.PingHandler{
 			Storage: appStorage,
 		},
 	}
@@ -54,6 +58,7 @@ func GetRouter(appStorage storage.MemStorage) chi.Router {
 				r.Handle("/{nameMetric}", &myHandlers.Get)
 			})
 		})
+		r.Handle("/ping", &myHandlers.Ping)
 	})
 
 	return r

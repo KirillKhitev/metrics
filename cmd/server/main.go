@@ -61,6 +61,7 @@ func saveToFile(appStorage storage.MemStorage) {
 			if err := appStorage.SaveToFile(); err != nil {
 				logger.Log.Error("Error by save metrics to file", zap.Error(err))
 			}
+			appStorage.CloseDB()
 			os.Exit(1)
 		}
 	}

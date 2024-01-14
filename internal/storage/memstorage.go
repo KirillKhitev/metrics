@@ -1,16 +1,19 @@
 package storage
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/logger"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 	"io"
 	"os"
 )
 
 type MemStorage struct {
+	DB      *sql.DB
 	Counter map[string]int64
 	Gauge   map[string]float64
 }
@@ -30,6 +33,10 @@ func (s *MemStorage) UpdateGauge(name string, value float64) error {
 func (s *MemStorage) Init() error {
 	s.Counter = make(map[string]int64)
 	s.Gauge = make(map[string]float64)
+
+	if err := s.initDBConnect(); err != nil {
+		return err
+	}
 
 	if !flags.Args.Restore {
 		return nil
@@ -99,4 +106,20 @@ func (s *MemStorage) SaveToFile() error {
 	}
 
 	return nil
+}
+
+func (s *MemStorage) initDBConnect() error {
+	db, err := sql.Open("pgx", flags.Args.DbConnectionString)
+	if err != nil {
+		return err
+	}
+
+	s.DB = db
+
+	return nil
+}
+
+func (s *MemStorage) CloseDB() {
+	logger.Log.Info("Close connect to DB")
+	s.DB.Close()
 }
