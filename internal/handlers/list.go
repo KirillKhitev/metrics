@@ -2,14 +2,10 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/KirillKhitev/metrics/internal/storage"
-	"io"
 	"net/http"
 )
 
-type ListHandler struct {
-	Storage storage.MemStorage
-}
+type ListHandler MyHandler
 
 func (ch *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -31,5 +27,6 @@ func (ch *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		result += fmt.Sprintf("<p>%s: %g</p>", name, value)
 	}
 
-	io.WriteString(w, result)
+	w.Write([]byte(result))
+	w.WriteHeader(http.StatusOK)
 }

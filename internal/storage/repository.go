@@ -11,4 +11,6 @@ type Repository interface {
 	GetGaugeList() map[string]float64
 
 	Init() error
+
+	SaveToFile()
 }
