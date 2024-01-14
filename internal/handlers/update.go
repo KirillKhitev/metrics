@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"github.com/KirillKhitev/metrics/internal/flags"
+	"github.com/KirillKhitev/metrics/internal/logger"
+	"go.uber.org/zap"
 	"net/http"
 	"strings"
 )
@@ -53,7 +55,9 @@ func (ch *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if flags.Args.StoreInterval == 0 {
-		ch.Storage.SaveToFile()
+		if err := ch.Storage.SaveToFile(); err != nil {
+			logger.Log.Error("Error by save metrics to file", zap.Error(err))
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)

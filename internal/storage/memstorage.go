@@ -81,13 +81,12 @@ func (s *MemStorage) GetGaugeList() map[string]float64 {
 	return s.Gauge
 }
 
-func (s *MemStorage) SaveToFile() {
+func (s *MemStorage) SaveToFile() error {
 	logger.Log.Info("Сохраняем метрики в файл")
 
 	file, err := os.OpenFile(flags.Args.FileStoragePath, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		logger.Log.Error("Error by export metrics to file from server", zap.Error(err))
-		return
+		return err
 	}
 
 	defer file.Close()
@@ -96,6 +95,8 @@ func (s *MemStorage) SaveToFile() {
 	encoder.SetIndent("", "    ")
 
 	if err := encoder.Encode(s); err != nil {
-		logger.Log.Error("Error by encode metrics to json", zap.Error(err))
+		return err
 	}
+
+	return nil
 }

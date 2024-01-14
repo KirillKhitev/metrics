@@ -64,7 +64,9 @@ func (ch *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if flags.Args.StoreInterval == 0 {
-		ch.Storage.SaveToFile()
+		if err := ch.Storage.SaveToFile(); err != nil {
+			logger.Log.Error("Error by save metrics to file", zap.Error(err))
+		}
 	}
 
 	str, err := json.MarshalIndent(request, "", "    ")

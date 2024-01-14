@@ -53,9 +53,14 @@ func saveToFile(appStorage storage.MemStorage) {
 	for {
 		select {
 		case <-ticker:
-			appStorage.SaveToFile()
+			if err := appStorage.SaveToFile(); err != nil {
+				logger.Log.Error("Error by save metrics to file", zap.Error(err))
+			}
+
 		case <-terminateSignals:
-			appStorage.SaveToFile()
+			if err := appStorage.SaveToFile(); err != nil {
+				logger.Log.Error("Error by save metrics to file", zap.Error(err))
+			}
 			os.Exit(1)
 		}
 	}
