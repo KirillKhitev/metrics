@@ -109,7 +109,7 @@ func (s *MemStorage) SaveToFile() error {
 }
 
 func (s *MemStorage) initDBConnect() error {
-	db, err := sql.Open("pgx", flags.Args.DbConnectionString)
+	db, err := sql.Open("pgx", flags.Args.DBConnectionString)
 	if err != nil {
 		return err
 	}
