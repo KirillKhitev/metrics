@@ -33,7 +33,7 @@ func (ch *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch typeMetric {
 	case "counter":
-		v, err := ch.Storage.GetCounter(nameMetric)
+		v, err := ch.Storage.GetCounter(r.Context(), nameMetric)
 
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
@@ -42,7 +42,7 @@ func (ch *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		res = fmt.Sprintf("%d", v)
 	case "gauge":
-		v, err := ch.Storage.GetGauge(nameMetric)
+		v, err := ch.Storage.GetGauge(r.Context(), nameMetric)
 
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)

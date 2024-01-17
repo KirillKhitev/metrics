@@ -27,7 +27,14 @@ func run() error {
 		return err
 	}
 
-	appStorage := storage.MemStorage{}
+	var appStorage storage.Repository
+
+	if flags.Args.DBConnectionString != "" {
+		appStorage = &storage.DBStorage{}
+	} else {
+		appStorage = &storage.MemStorage{}
+	}
+
 	if err := appStorage.Init(); err != nil {
 		return err
 	}
@@ -36,10 +43,12 @@ func run() error {
 
 	logger.Log.Info("Running server", zap.String("address", flags.Args.AddrRun))
 
-	return http.ListenAndServe(flags.Args.AddrRun, logger.RequestLogger(gzip.Middleware(server.GetRouter(appStorage))))
+	handler := gzip.Middleware(server.GetRouter(appStorage))
+
+	return http.ListenAndServe(flags.Args.AddrRun, logger.RequestLogger(handler))
 }
 
-func saveToFile(appStorage storage.MemStorage) {
+func saveToFile(appStorage storage.Repository) {
 	ticker := make(<-chan time.Time)
 
 	if flags.Args.StoreInterval > 0 {
@@ -53,15 +62,15 @@ func saveToFile(appStorage storage.MemStorage) {
 	for {
 		select {
 		case <-ticker:
-			if err := appStorage.SaveToFile(); err != nil {
+			if err := appStorage.TrySaveToFile(); err != nil {
 				logger.Log.Error("Error by save metrics to file", zap.Error(err))
 			}
 
 		case <-terminateSignals:
-			if err := appStorage.SaveToFile(); err != nil {
+			if err := appStorage.TrySaveToFile(); err != nil {
 				logger.Log.Error("Error by save metrics to file", zap.Error(err))
 			}
-			appStorage.CloseDB()
+			appStorage.Close()
 			os.Exit(1)
 		}
 	}

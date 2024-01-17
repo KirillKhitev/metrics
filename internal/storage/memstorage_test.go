@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -59,7 +60,7 @@ func TestMemStorage_GetCounter(t *testing.T) {
 				Counter: tt.storage.counter,
 				Gauge:   tt.storage.gauge,
 			}
-			got, err := s.GetCounter(tt.args.name)
+			got, err := s.GetCounter(context.TODO(), tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetCounter() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -125,7 +126,7 @@ func TestMemStorage_GetGauge(t *testing.T) {
 				Counter: tt.storage.counter,
 				Gauge:   tt.storage.gauge,
 			}
-			got, err := s.GetGauge(tt.args.name)
+			got, err := s.GetGauge(context.TODO(), tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetGauge() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -228,13 +229,13 @@ func TestMemStorage_UpdateCounter(t *testing.T) {
 				Gauge:   tt.storage.gauge,
 			}
 
-			err := s.UpdateCounter(tt.args.name, tt.args.value)
+			err := s.UpdateCounter(context.TODO(), tt.args.name, tt.args.value)
 
 			if tt.wantErr {
 				require.NotNil(t, err)
 			}
 
-			val, _ := s.GetCounter(tt.args.name)
+			val, _ := s.GetCounter(context.TODO(), tt.args.name)
 
 			require.Equal(t, tt.wantValue, val)
 		})
@@ -300,13 +301,13 @@ func TestMemStorage_UpdateGauge(t *testing.T) {
 				Gauge:   tt.storage.gauge,
 			}
 
-			err := s.UpdateGauge(tt.args.name, tt.args.value)
+			err := s.UpdateGauge(context.TODO(), tt.args.name, tt.args.value)
 
 			if tt.wantErr {
 				require.NotNil(t, err)
 			}
 
-			val, _ := s.GetGauge(tt.args.name)
+			val, _ := s.GetGauge(context.TODO(), tt.args.name)
 
 			require.Equal(t, tt.wantValue, val)
 		})

@@ -43,9 +43,9 @@ func (ch *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch typeMetric {
 	case "counter":
-		res = updateCounter(&mh, w, nameMetric, valueMetric)
+		res = updateCounter(r.Context(), &mh, w, nameMetric, valueMetric)
 	case "gauge":
-		res = updateGauge(&mh, w, nameMetric, valueMetric)
+		res = updateGauge(r.Context(), &mh, w, nameMetric, valueMetric)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 	}
@@ -55,7 +55,7 @@ func (ch *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if flags.Args.StoreInterval == 0 {
-		if err := ch.Storage.SaveToFile(); err != nil {
+		if err := ch.Storage.TrySaveToFile(); err != nil {
 			logger.Log.Error("Error by save metrics to file", zap.Error(err))
 		}
 	}

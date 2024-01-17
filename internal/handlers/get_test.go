@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"github.com/KirillKhitev/metrics/internal/storage"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -132,15 +133,15 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 			}
 
 			for name, value := range tt.args.counter {
-				appStorage.UpdateCounter(name, value)
+				appStorage.UpdateCounter(context.TODO(), name, value)
 			}
 
 			for name, value := range tt.args.gauge {
-				appStorage.UpdateGauge(name, value)
+				appStorage.UpdateGauge(context.TODO(), name, value)
 			}
 
 			ch := &GetHandler{
-				Storage: appStorage,
+				Storage: &appStorage,
 			}
 
 			request := httptest.NewRequest(tt.args.method, tt.args.addr, nil)

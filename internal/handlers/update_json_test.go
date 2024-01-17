@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"github.com/KirillKhitev/metrics/internal/metrics"
 	"github.com/KirillKhitev/metrics/internal/storage"
@@ -86,11 +87,11 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 				t.Fatal("Не удалось создать хранилище")
 			}
 
-			appStorage.UpdateCounter("PollCounter", 30)
-			appStorage.UpdateGauge("Alloc", 125.20)
+			appStorage.UpdateCounter(context.TODO(), "PollCounter", 30)
+			appStorage.UpdateGauge(context.TODO(), "Alloc", 125.20)
 
 			ch := &UpdateJSONHandler{
-				Storage: appStorage,
+				Storage: &appStorage,
 			}
 
 			str, _ := json.Marshal(tt.args.metric)

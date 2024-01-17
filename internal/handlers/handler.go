@@ -1,24 +1,25 @@
 package handlers
 
 import (
+	"context"
 	"github.com/KirillKhitev/metrics/internal/storage"
 	"net/http"
 	"strconv"
 )
 
 type MyHandler struct {
-	Storage storage.MemStorage
+	Storage storage.Repository
 }
 
-func updateCounter(ch *MyHandler, w http.ResponseWriter, n string, v string) bool {
-	value, err := strconv.ParseInt(v, 10, 64)
+func updateCounter(ctx context.Context, ch *MyHandler, w http.ResponseWriter, name string, valStr string) bool {
+	value, err := strconv.ParseInt(valStr, 10, 64)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return false
 	}
 
-	err = ch.Storage.UpdateCounter(n, value)
+	err = ch.Storage.UpdateCounter(ctx, name, value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return false
@@ -28,15 +29,15 @@ func updateCounter(ch *MyHandler, w http.ResponseWriter, n string, v string) boo
 	return true
 }
 
-func updateGauge(ch *MyHandler, w http.ResponseWriter, n string, v string) bool {
-	value, err := strconv.ParseFloat(v, 64)
+func updateGauge(ctx context.Context, ch *MyHandler, w http.ResponseWriter, name string, valStr string) bool {
+	value, err := strconv.ParseFloat(valStr, 64)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return false
 	}
 
-	err = ch.Storage.UpdateGauge(n, value)
+	err = ch.Storage.UpdateGauge(ctx, name, value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return false

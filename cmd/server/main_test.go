@@ -32,7 +32,7 @@ func TestRouter(t *testing.T) {
 		return
 	}
 
-	ts := httptest.NewServer(server.GetRouter(appStorage))
+	ts := httptest.NewServer(server.GetRouter(&appStorage))
 	defer ts.Close()
 
 	var testTable = []struct {

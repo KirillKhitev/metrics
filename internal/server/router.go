@@ -15,7 +15,7 @@ type Handlers struct {
 	Ping       handlers.PingHandler
 }
 
-func GetRouter(appStorage storage.MemStorage) chi.Router {
+func GetRouter(appStorage storage.Repository) chi.Router {
 	r := chi.NewRouter()
 
 	var myHandlers = Handlers{

@@ -17,13 +17,13 @@ func (ch *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	result := "<b>Counter:</b><br/>"
 
-	for name, value := range ch.Storage.GetCounterList() {
+	for name, value := range ch.Storage.GetCounterList(r.Context()) {
 		result += fmt.Sprintf("<p>%s: %d</p>", name, value)
 	}
 
 	result += "<br/><br/><b>Gauge:</b><br/>"
 
-	for name, value := range ch.Storage.GetGaugeList() {
+	for name, value := range ch.Storage.GetGaugeList(r.Context()) {
 		result += fmt.Sprintf("<p>%s: %g</p>", name, value)
 	}
 

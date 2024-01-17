@@ -39,7 +39,7 @@ func (ch *GetJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch request.MType {
 	case "counter":
-		v, err := ch.Storage.GetCounter(request.ID)
+		v, err := ch.Storage.GetCounter(r.Context(), request.ID)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -47,7 +47,7 @@ func (ch *GetJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		request.Delta = &v
 	case "gauge":
-		v, err := ch.Storage.GetGauge(request.ID)
+		v, err := ch.Storage.GetGauge(r.Context(), request.ID)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
