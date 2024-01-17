@@ -3,10 +3,12 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/logger"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
+	"time"
 )
 
 type DBStorage struct {
@@ -99,6 +101,8 @@ func (s *DBStorage) Init() error {
 
 	s.db = db
 
+	s.prepareTables()
+
 	return nil
 }
 
@@ -109,6 +113,8 @@ func (s *DBStorage) GetCounterList(ctx context.Context) map[string]int64 {
 		logger.Log.Error("Error query to DB", zap.Error(err))
 		return result
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var name string
@@ -123,6 +129,11 @@ func (s *DBStorage) GetCounterList(ctx context.Context) map[string]int64 {
 		result[name] = value
 	}
 
+	if err := rows.Err(); err != nil {
+		logger.Log.Error("Error query to DB", zap.Error(err))
+		return result
+	}
+
 	return result
 }
 
@@ -133,6 +144,8 @@ func (s *DBStorage) GetGaugeList(ctx context.Context) map[string]float64 {
 		logger.Log.Error("Error query to DB", zap.Error(err))
 		return result
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var name string
@@ -145,6 +158,11 @@ func (s *DBStorage) GetGaugeList(ctx context.Context) map[string]float64 {
 		}
 
 		result[name] = value
+	}
+
+	if err := rows.Err(); err != nil {
+		logger.Log.Error("Error query to DB", zap.Error(err))
+		return result
 	}
 
 	return result
@@ -161,6 +179,23 @@ func (s *DBStorage) Close() error {
 func (s *DBStorage) Ping(ctx context.Context) error {
 	if err := s.db.PingContext(ctx); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (s *DBStorage) prepareTables() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := s.db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS counter (name varchar(255) NOT NULL PRIMARY KEY, value bigint)")
+	if err != nil {
+		return fmt.Errorf("не удалось создать таблицу counter: %w", err)
+	}
+
+	_, err = s.db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS gauge (name varchar(255) NOT NULL PRIMARY KEY, value double precision)")
+	if err != nil {
+		return fmt.Errorf("не удалось создать таблицу gauge: %w", err)
 	}
 
 	return nil
