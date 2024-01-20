@@ -68,11 +68,7 @@ func (s *DBStorage) UpdateCounters(ctx context.Context, data []metrics.Metrics) 
 
 	for _, metrica := range data {
 		if _, ok := metricsForUpdate[metrica.ID]; !ok {
-			oldValue, err := s.GetCounter(ctx, metrica.ID)
-			if err != nil {
-				logger.Log.Error("Error by get value from db for "+metrica.ID, zap.Error(err))
-				return err
-			}
+			oldValue, _ := s.GetCounter(ctx, metrica.ID)
 
 			metricsForUpdate[metrica.ID] = oldValue
 		}
