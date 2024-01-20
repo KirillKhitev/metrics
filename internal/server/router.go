@@ -9,6 +9,7 @@ import (
 type Handlers struct {
 	Update     handlers.UpdateHandler
 	UpdateJSON handlers.UpdateJSONHandler
+	Updates    handlers.UpdatesHandler
 	List       handlers.ListHandler
 	Get        handlers.GetHandler
 	GetJSON    handlers.GetJSONHandler
@@ -23,6 +24,9 @@ func GetRouter(appStorage storage.Repository) chi.Router {
 			Storage: appStorage,
 		},
 		UpdateJSON: handlers.UpdateJSONHandler{
+			Storage: appStorage,
+		},
+		Updates: handlers.UpdatesHandler{
 			Storage: appStorage,
 		},
 		List: handlers.ListHandler{
@@ -41,6 +45,9 @@ func GetRouter(appStorage storage.Repository) chi.Router {
 
 	r.Route("/", func(r chi.Router) {
 		r.Handle("/", &myHandlers.List)
+		r.Route("/updates", func(r chi.Router) {
+			r.Handle("/", &myHandlers.Updates)
+		})
 		r.Route("/update", func(r chi.Router) {
 			r.Handle("/", &myHandlers.UpdateJSON)
 			r.Route("/{typeMetric}", func(r chi.Router) {

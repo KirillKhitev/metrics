@@ -53,7 +53,7 @@ func (a *agent) getMetrics() {
 func (a *agent) sendMetrics() {
 	ticker := time.Tick(time.Second * time.Duration(flags.ReportInterval))
 
-	send := func(body metrics.Metrics) {
+	send := func(body []metrics.Metrics) {
 		str, err := json.Marshal(body)
 		if err != nil {
 			log.Printf("error by encode metric: %v, error: %s", body, err)
@@ -72,6 +72,8 @@ func (a *agent) sendMetrics() {
 		<-ticker
 		a.Lock()
 
+		data := make([]metrics.Metrics, 0)
+
 		for name, value := range metrics.PrepareCounterForSend(a.pollCount) {
 			metrica := metrics.Metrics{
 				ID:    name,
@@ -79,7 +81,7 @@ func (a *agent) sendMetrics() {
 				Delta: &value,
 			}
 
-			send(metrica)
+			data = append(data, metrica)
 		}
 
 		for name, value := range metrics.PrepareGaugeForSend(&a.data) {
@@ -89,15 +91,17 @@ func (a *agent) sendMetrics() {
 				Value: &value,
 			}
 
-			send(metrica)
+			data = append(data, metrica)
 		}
+
+		send(data)
 
 		a.Unlock()
 	}
 }
 
 func (a *agent) sendUpdate(data []byte) (*resty.Response, error) {
-	url := fmt.Sprintf("http://%s/update/", flags.AddrRun)
+	url := fmt.Sprintf("http://%s/updates/", flags.AddrRun)
 
 	dataCompress, err := a.Compress(data)
 	if err != nil {

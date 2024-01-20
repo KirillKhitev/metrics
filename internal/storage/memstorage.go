@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/logger"
+	"github.com/KirillKhitev/metrics/internal/metrics"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"io"
 	"os"
@@ -22,8 +23,24 @@ func (s *MemStorage) UpdateCounter(ctx context.Context, name string, value int64
 	return nil
 }
 
+func (s *MemStorage) UpdateCounters(ctx context.Context, data []metrics.Metrics) error {
+	for _, metrica := range data {
+		s.Counter[metrica.ID] += *metrica.Delta
+	}
+
+	return nil
+}
+
 func (s *MemStorage) UpdateGauge(ctx context.Context, name string, value float64) error {
 	s.Gauge[name] = value
+
+	return nil
+}
+
+func (s *MemStorage) UpdateGauges(ctx context.Context, data []metrics.Metrics) error {
+	for _, metrica := range data {
+		s.Gauge[metrica.ID] = *metrica.Value
+	}
 
 	return nil
 }
@@ -70,6 +87,22 @@ func (s *MemStorage) GetCounter(ctx context.Context, name string) (v int64, err 
 	return v, nil
 }
 
+func (s *MemStorage) GetCounters(ctx context.Context, data []string) (map[string]int64, error) {
+	result := map[string]int64{}
+
+	for _, name := range data {
+		v, ok := s.Counter[name]
+
+		if !ok {
+			continue
+		}
+
+		result[name] = v
+	}
+
+	return result, nil
+}
+
 func (s *MemStorage) GetGauge(ctx context.Context, name string) (v float64, err error) {
 	v, ok := s.Gauge[name]
 
@@ -78,6 +111,22 @@ func (s *MemStorage) GetGauge(ctx context.Context, name string) (v float64, err 
 	}
 
 	return v, nil
+}
+
+func (s *MemStorage) GetGauges(ctx context.Context, data []string) (map[string]float64, error) {
+	result := map[string]float64{}
+
+	for _, name := range data {
+		v, ok := s.Gauge[name]
+
+		if !ok {
+			continue
+		}
+
+		result[name] = v
+	}
+
+	return result, nil
 }
 
 func (s *MemStorage) GetCounterList(ctx context.Context) map[string]int64 {
