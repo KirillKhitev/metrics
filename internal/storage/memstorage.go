@@ -65,9 +65,9 @@ func (s *MemStorage) getDataFromFile() error {
 	var file *os.File
 	var err error
 
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		file, err = os.OpenFile(flags.Args.FileStoragePath, os.O_RDONLY|os.O_CREATE, 0666)
-		if err != nil && i != ATTEMPT_COUNT {
+		if err != nil && i != AttemptCount {
 			continue
 		}
 
@@ -159,9 +159,9 @@ func (s *MemStorage) TrySaveToFile() error {
 	var file *os.File
 	var err error
 
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		file, err = os.OpenFile(flags.Args.FileStoragePath, os.O_WRONLY|os.O_CREATE, 0666)
-		if err != nil && i != ATTEMPT_COUNT {
+		if err != nil && i != AttemptCount {
 			time.Sleep(time.Duration(2*i-1) * time.Second)
 			continue
 		}

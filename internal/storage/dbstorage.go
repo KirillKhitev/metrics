@@ -20,11 +20,11 @@ type DBStorage struct {
 }
 
 func (s *DBStorage) UpdateCounter(ctx context.Context, name string, value int64) error {
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		err := s.attemptUpdateCounter(ctx, name, value)
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != ATTEMPT_COUNT {
+			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != AttemptCount {
 				time.Sleep(time.Duration(2*i-1) * time.Second)
 				continue
 			}
@@ -64,11 +64,11 @@ func (s *DBStorage) attemptUpdateCounter(ctx context.Context, name string, value
 }
 
 func (s *DBStorage) UpdateCounters(ctx context.Context, data []metrics.Metrics) error {
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		err := s.attemptUpdateCounters(ctx, data)
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != ATTEMPT_COUNT {
+			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != AttemptCount {
 				time.Sleep(time.Duration(2*i-1) * time.Second)
 				continue
 			}
@@ -128,11 +128,11 @@ func (s *DBStorage) GetCounter(ctx context.Context, name string) (int64, error) 
 	var value int64
 	var err error
 
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		value, err = s.attemptGetCounter(ctx, name)
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != ATTEMPT_COUNT {
+			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != AttemptCount {
 				time.Sleep(time.Duration(2*i-1) * time.Second)
 				continue
 			}
@@ -162,11 +162,11 @@ func (s *DBStorage) GetCounters(ctx context.Context, data []string) (map[string]
 	var result map[string]int64
 	var err error
 
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		result, err = s.attemptGetCounters(ctx, data)
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != ATTEMPT_COUNT {
+			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != AttemptCount {
 				time.Sleep(time.Duration(2*i-1) * time.Second)
 				continue
 			}
@@ -220,11 +220,11 @@ func (s *DBStorage) attemptGetCounters(ctx context.Context, data []string) (map[
 }
 
 func (s *DBStorage) UpdateGauge(ctx context.Context, name string, value float64) error {
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		err := s.attemptUpdateGauge(ctx, name, value)
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != ATTEMPT_COUNT {
+			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != AttemptCount {
 				time.Sleep(time.Duration(2*i-1) * time.Second)
 				continue
 			}
@@ -263,11 +263,11 @@ func (s *DBStorage) attemptUpdateGauge(ctx context.Context, name string, value f
 }
 
 func (s *DBStorage) UpdateGauges(ctx context.Context, data []metrics.Metrics) error {
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		err := s.attemptUpdateGauges(ctx, data)
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != ATTEMPT_COUNT {
+			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != AttemptCount {
 				time.Sleep(time.Duration(2*i-1) * time.Second)
 				continue
 			}
@@ -321,11 +321,11 @@ func (s *DBStorage) GetGauge(ctx context.Context, name string) (float64, error) 
 	var value float64
 	var err error
 
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		value, err = s.attemptGetGauge(ctx, name)
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != ATTEMPT_COUNT {
+			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != AttemptCount {
 				time.Sleep(time.Duration(2*i-1) * time.Second)
 				continue
 			}
@@ -355,11 +355,11 @@ func (s *DBStorage) GetGauges(ctx context.Context, data []string) (map[string]fl
 	var result map[string]float64
 	var err error
 
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		result, err = s.attemptGetGauges(ctx, data)
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != ATTEMPT_COUNT {
+			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != AttemptCount {
 				time.Sleep(time.Duration(2*i-1) * time.Second)
 				continue
 			}
@@ -421,11 +421,11 @@ func (s *DBStorage) Init() error {
 
 	s.db = db
 
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		err := s.prepareTables()
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != ATTEMPT_COUNT {
+			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != AttemptCount {
 				time.Sleep(time.Duration(2*i-1) * time.Second)
 				continue
 			}
@@ -443,11 +443,11 @@ func (s *DBStorage) GetCounterList(ctx context.Context) map[string]int64 {
 	var result map[string]int64
 	var err error
 
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		result, err = s.attemptGetCounterList(ctx)
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != ATTEMPT_COUNT {
+			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != AttemptCount {
 				time.Sleep(time.Duration(2*i-1) * time.Second)
 				continue
 			}
@@ -495,11 +495,11 @@ func (s *DBStorage) GetGaugeList(ctx context.Context) map[string]float64 {
 	var result map[string]float64
 	var err error
 
-	for i := 1; i <= ATTEMPT_COUNT; i++ {
+	for i := 1; i <= AttemptCount; i++ {
 		result, err = s.attemptGetGaugeList(ctx)
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != ATTEMPT_COUNT {
+			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) && i != AttemptCount {
 				time.Sleep(time.Duration(2*i-1) * time.Second)
 				continue
 			}

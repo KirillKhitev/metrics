@@ -5,7 +5,7 @@ import (
 	"github.com/KirillKhitev/metrics/internal/metrics"
 )
 
-const ATTEMPT_COUNT int = 4
+const AttemptCount int = 4
 
 type Repository interface {
 	UpdateCounter(ctx context.Context, name string, value int64) error
