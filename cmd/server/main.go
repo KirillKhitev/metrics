@@ -61,11 +61,9 @@ func intervalSaveToFile(appStorage storage.Repository) {
 	}
 
 	for {
-		select {
-		case <-ticker:
-			if err := appStorage.TrySaveToFile(); err != nil {
-				logger.Log.Error("Error by save metrics to file", zap.Error(err))
-			}
+		<-ticker
+		if err := appStorage.TrySaveToFile(); err != nil {
+			logger.Log.Error("Error by save metrics to file", zap.Error(err))
 		}
 	}
 }
@@ -75,7 +73,7 @@ func catchTerminateSignal(appStorage storage.Repository) error {
 
 	signal.Notify(terminateSignals, syscall.SIGINT, syscall.SIGTERM)
 
-	_ = <-terminateSignals
+	<-terminateSignals
 	if err := appStorage.TrySaveToFile(); err != nil {
 		logger.Log.Error("Error by save metrics to file", zap.Error(err))
 	}
