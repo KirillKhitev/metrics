@@ -10,6 +10,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"io"
 	"os"
+	"time"
 )
 
 type MemStorage struct {
@@ -61,7 +62,18 @@ func (s *MemStorage) Init() error {
 }
 
 func (s *MemStorage) getDataFromFile() error {
-	file, err := os.OpenFile(flags.Args.FileStoragePath, os.O_RDONLY|os.O_CREATE, 0666)
+	var file *os.File
+	var err error
+
+	for i := 1; i <= ATTEMPT_COUNT; i++ {
+		file, err = os.OpenFile(flags.Args.FileStoragePath, os.O_RDONLY|os.O_CREATE, 0666)
+		if err != nil && i != ATTEMPT_COUNT {
+			continue
+		}
+
+		break
+	}
+
 	if err != nil {
 		return err
 	}
@@ -144,7 +156,19 @@ func (s *MemStorage) Close() error {
 func (s *MemStorage) TrySaveToFile() error {
 	logger.Log.Info("Сохраняем метрики в файл")
 
-	file, err := os.OpenFile(flags.Args.FileStoragePath, os.O_WRONLY|os.O_CREATE, 0666)
+	var file *os.File
+	var err error
+
+	for i := 1; i <= ATTEMPT_COUNT; i++ {
+		file, err = os.OpenFile(flags.Args.FileStoragePath, os.O_WRONLY|os.O_CREATE, 0666)
+		if err != nil && i != ATTEMPT_COUNT {
+			time.Sleep(time.Duration(2*i-1) * time.Second)
+			continue
+		}
+
+		break
+	}
+
 	if err != nil {
 		return err
 	}

@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const ATTEMPT_COUNT = 4
+
 type agent struct {
 	sync.Mutex
 	client    *resty.Client
@@ -60,11 +62,23 @@ func (a *agent) sendMetrics() {
 			return
 		}
 
-		_, err = a.sendUpdate(str)
+		for i := 1; i <= ATTEMPT_COUNT; i++ {
+			_, err = a.sendUpdate(str)
+			if err != nil {
+				log.Printf("Attempt%d send metrics, err: %v", i, err)
+
+				if i < ATTEMPT_COUNT {
+					time.Sleep(time.Duration(2*i-1) * time.Second)
+				}
+
+				continue
+			}
+
+			break
+		}
 
 		if err != nil {
-			log.Println(err)
-			return
+			log.Println("Failure send metrics")
 		}
 	}
 
