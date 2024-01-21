@@ -39,8 +39,13 @@ func run() error {
 		return err
 	}
 
-	go saveToFile(appStorage)
+	go intervalSaveToFile(appStorage)
+	go startServer(appStorage)
 
+	return catchTerminateSignal(appStorage)
+}
+
+func startServer(appStorage storage.Repository) error {
 	logger.Log.Info("Running server", zap.String("address", flags.Args.AddrRun))
 
 	handler := gzip.Middleware(server.GetRouter(appStorage))
@@ -48,16 +53,12 @@ func run() error {
 	return http.ListenAndServe(flags.Args.AddrRun, logger.RequestLogger(handler))
 }
 
-func saveToFile(appStorage storage.Repository) {
+func intervalSaveToFile(appStorage storage.Repository) {
 	ticker := make(<-chan time.Time)
 
 	if flags.Args.StoreInterval > 0 {
 		ticker = time.Tick(time.Second * time.Duration(flags.Args.StoreInterval))
 	}
-
-	terminateSignals := make(chan os.Signal, 1)
-
-	signal.Notify(terminateSignals, syscall.SIGINT, syscall.SIGTERM)
 
 	for {
 		select {
@@ -65,13 +66,23 @@ func saveToFile(appStorage storage.Repository) {
 			if err := appStorage.TrySaveToFile(); err != nil {
 				logger.Log.Error("Error by save metrics to file", zap.Error(err))
 			}
-
-		case <-terminateSignals:
-			if err := appStorage.TrySaveToFile(); err != nil {
-				logger.Log.Error("Error by save metrics to file", zap.Error(err))
-			}
-			appStorage.Close()
-			os.Exit(1)
 		}
 	}
+}
+
+func catchTerminateSignal(appStorage storage.Repository) error {
+	terminateSignals := make(chan os.Signal, 1)
+
+	signal.Notify(terminateSignals, syscall.SIGINT, syscall.SIGTERM)
+
+	_ = <-terminateSignals
+	if err := appStorage.TrySaveToFile(); err != nil {
+		logger.Log.Error("Error by save metrics to file", zap.Error(err))
+	}
+
+	appStorage.Close()
+
+	logger.Log.Info("Terminate app")
+
+	return nil
 }
