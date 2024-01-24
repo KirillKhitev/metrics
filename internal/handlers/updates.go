@@ -36,12 +36,12 @@ func (ch *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	response := make([]metrics.Metrics, 0)
 
-	if err := ch.prepareResponseCounters(&response, r, counters); err != nil {
+	if response, err = ch.prepareResponseCounters(response, r, counters); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if err := ch.prepareResponseGauges(&response, r, gauges); err != nil {
+	if response, err = ch.prepareResponseGauges(response, r, gauges); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -65,7 +65,7 @@ func (ch *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (ch *UpdatesHandler) prepareResponseCounters(response *[]metrics.Metrics, r *http.Request, counters []metrics.Metrics) error {
+func (ch *UpdatesHandler) prepareResponseCounters(response []metrics.Metrics, r *http.Request, counters []metrics.Metrics) ([]metrics.Metrics, error) {
 	var names []string
 
 	for _, metrica := range counters {
@@ -74,7 +74,7 @@ func (ch *UpdatesHandler) prepareResponseCounters(response *[]metrics.Metrics, r
 
 	data, err := ch.Storage.GetCounters(r.Context(), names)
 	if err != nil {
-		return err
+		return response, err
 	}
 
 	for name, value := range data {
@@ -84,13 +84,13 @@ func (ch *UpdatesHandler) prepareResponseCounters(response *[]metrics.Metrics, r
 			MType: "counter",
 			Delta: &val,
 		}
-		*response = append(*response, metrica)
+		response = append(response, metrica)
 	}
 
-	return nil
+	return response, nil
 }
 
-func (ch *UpdatesHandler) prepareResponseGauges(response *[]metrics.Metrics, r *http.Request, gauges []metrics.Metrics) error {
+func (ch *UpdatesHandler) prepareResponseGauges(response []metrics.Metrics, r *http.Request, gauges []metrics.Metrics) ([]metrics.Metrics, error) {
 	var names []string
 
 	for _, metrica := range gauges {
@@ -99,7 +99,7 @@ func (ch *UpdatesHandler) prepareResponseGauges(response *[]metrics.Metrics, r *
 
 	data, err := ch.Storage.GetGauges(r.Context(), names)
 	if err != nil {
-		return err
+		return response, err
 	}
 
 	for name, value := range data {
@@ -109,10 +109,10 @@ func (ch *UpdatesHandler) prepareResponseGauges(response *[]metrics.Metrics, r *
 			MType: "gauges",
 			Value: &val,
 		}
-		*response = append(*response, metrica)
+		response = append(response, metrica)
 	}
 
-	return nil
+	return response, nil
 }
 
 func (ch *UpdatesHandler) getDataFromRequest(r *http.Request) ([]metrics.Metrics, []metrics.Metrics, error) {

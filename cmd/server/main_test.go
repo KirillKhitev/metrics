@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/KirillKhitev/metrics/internal/server"
 	"github.com/KirillKhitev/metrics/internal/storage"
 	"github.com/stretchr/testify/assert"
@@ -27,7 +28,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.
 
 func TestRouter(t *testing.T) {
 	appStorage := storage.MemStorage{}
-	if err := appStorage.Init(); err != nil {
+	if err := appStorage.Init(context.Background()); err != nil {
 		t.Errorf("dont init appStorage")
 		return
 	}

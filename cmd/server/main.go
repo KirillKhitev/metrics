@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/gzip"
 	"github.com/KirillKhitev/metrics/internal/logger"
@@ -35,7 +36,7 @@ func run() error {
 		appStorage = &storage.MemStorage{}
 	}
 
-	if err := appStorage.Init(); err != nil {
+	if err := appStorage.Init(context.Background()); err != nil {
 		return err
 	}
 

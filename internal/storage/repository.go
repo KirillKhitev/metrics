@@ -21,7 +21,7 @@ type Repository interface {
 	GetCounterList(ctx context.Context) map[string]int64
 	GetGaugeList(ctx context.Context) map[string]float64
 
-	Init() error
+	Init(ctx context.Context) error
 	Ping(ctx context.Context) error
 
 	TrySaveToFile() error

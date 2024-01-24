@@ -83,7 +83,7 @@ func TestUpdateJSONHandler_ServeHTTP(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			appStorage := storage.MemStorage{}
 
-			if err := appStorage.Init(); err != nil {
+			if err := appStorage.Init(context.Background()); err != nil {
 				t.Fatal("Не удалось создать хранилище")
 			}
 

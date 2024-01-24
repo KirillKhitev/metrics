@@ -46,7 +46,7 @@ func (s *MemStorage) UpdateGauges(ctx context.Context, data []metrics.Metrics) e
 	return nil
 }
 
-func (s *MemStorage) Init() error {
+func (s *MemStorage) Init(ctx context.Context) error {
 	s.Counter = make(map[string]int64)
 	s.Gauge = make(map[string]float64)
 
