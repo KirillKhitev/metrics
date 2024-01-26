@@ -55,15 +55,19 @@ func (a *agent) getMetrics() {
 func (a *agent) sendMetrics() {
 	ticker := time.Tick(time.Second * time.Duration(flags.ReportInterval))
 
-	send := func(body []metrics.Metrics) {
-		str, err := json.Marshal(body)
+	for {
+		<-ticker
+		a.Lock()
+
+		data, err := a.prepareDataForSend()
 		if err != nil {
-			log.Printf("error by encode metric: %v, error: %s", body, err)
-			return
+			log.Printf("Failure prepare data for send: %s", err)
+			a.Unlock()
+			continue
 		}
 
 		for i := 1; i <= AttemptCount; i++ {
-			_, err = a.sendUpdate(str)
+			_, err := a.sendUpdate(data)
 			if err != nil {
 				log.Printf("Attempt%d send metrics, err: %v", i, err)
 
@@ -80,38 +84,41 @@ func (a *agent) sendMetrics() {
 		if err != nil {
 			log.Println("Failure send metrics")
 		}
-	}
-
-	for {
-		<-ticker
-		a.Lock()
-
-		data := make([]metrics.Metrics, 0)
-
-		for name, value := range metrics.PrepareCounterForSend(a.pollCount) {
-			metrica := metrics.Metrics{
-				ID:    name,
-				MType: "counter",
-				Delta: &value,
-			}
-
-			data = append(data, metrica)
-		}
-
-		for name, value := range metrics.PrepareGaugeForSend(&a.data) {
-			metrica := metrics.Metrics{
-				ID:    name,
-				MType: "gauge",
-				Value: &value,
-			}
-
-			data = append(data, metrica)
-		}
-
-		send(data)
 
 		a.Unlock()
 	}
+}
+
+func (a *agent) prepareDataForSend() ([]byte, error) {
+	data := make([]metrics.Metrics, 0)
+
+	for name, value := range metrics.PrepareCounterForSend(a.pollCount) {
+		metrica := metrics.Metrics{
+			ID:    name,
+			MType: "counter",
+			Delta: &value,
+		}
+
+		data = append(data, metrica)
+	}
+
+	for name, value := range metrics.PrepareGaugeForSend(&a.data) {
+		metrica := metrics.Metrics{
+			ID:    name,
+			MType: "gauge",
+			Value: &value,
+		}
+
+		data = append(data, metrica)
+	}
+
+	result, err := json.Marshal(data)
+	if err != nil {
+		err = fmt.Errorf("error by encode metric: %v, error: %w", data, err)
+		return result, err
+	}
+
+	return result, nil
 }
 
 func (a *agent) sendUpdate(data []byte) (*resty.Response, error) {
