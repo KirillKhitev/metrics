@@ -99,11 +99,11 @@ func (s *DBStorage) attemptUpdateCounters(ctx context.Context, data []metrics.Me
 
 	for range metricsForUpdate {
 		if _, err := results.Exec(); err != nil {
-			return fmt.Errorf("error by insert row: %w", err)
+			return fmt.Errorf("unable query: %w", err)
 		}
 	}
 
-	return results.Close()
+	return nil
 }
 
 func (s *DBStorage) GetCounter(ctx context.Context, name string) (int64, error) {
@@ -135,7 +135,7 @@ func (s *DBStorage) attemptGetCounter(ctx context.Context, name string) (int64, 
 
 	err := row.Scan(&value)
 	if err != nil {
-		return value, fmt.Errorf("error by select row: %w", err)
+		return value, fmt.Errorf("unable query: %w", err)
 	}
 
 	return value, nil
@@ -168,7 +168,7 @@ func (s *DBStorage) attemptGetCounters(ctx context.Context, data []string) (map[
 
 	rows, err := s.db.Query(ctx, "SELECT name, value FROM counter WHERE name = ANY ($1)", data)
 	if err != nil {
-		return result, fmt.Errorf("error by select rows: %w", err)
+		return result, fmt.Errorf("unable query: %w", err)
 	}
 
 	defer rows.Close()
@@ -214,7 +214,7 @@ func (s *DBStorage) UpdateGauge(ctx context.Context, name string, value float64)
 func (s *DBStorage) attemptUpdateGauge(ctx context.Context, name string, value float64) error {
 	_, err := s.db.Exec(ctx, "INSERT INTO gauge (name, value) VALUES($1, $2) ON CONFLICT (name) DO UPDATE SET name = $1, value = $2", name, value)
 	if err != nil {
-		return fmt.Errorf("unable to insert row: %w", err)
+		return fmt.Errorf("unable to query: %w", err)
 	}
 
 	return nil
@@ -261,11 +261,11 @@ func (s *DBStorage) attemptUpdateGauges(ctx context.Context, data []metrics.Metr
 	for range metricsForUpdate {
 		_, err := results.Exec()
 		if err != nil {
-			return fmt.Errorf("unable to insert/update gauges: %w", err)
+			return fmt.Errorf("unable query: %w", err)
 		}
 	}
 
-	return results.Close()
+	return nil
 }
 
 func (s *DBStorage) GetGauge(ctx context.Context, name string) (float64, error) {
@@ -297,7 +297,7 @@ func (s *DBStorage) attemptGetGauge(ctx context.Context, name string) (float64, 
 
 	err := row.Scan(&value)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return value, fmt.Errorf("error by select row: %w", err)
+		return value, fmt.Errorf("unable query: %w", err)
 	}
 
 	return value, nil
@@ -330,7 +330,7 @@ func (s *DBStorage) attemptGetGauges(ctx context.Context, data []string) (map[st
 
 	rows, err := s.db.Query(ctx, "SELECT name, value FROM gauge WHERE name = ANY ($1)", data)
 	if err != nil {
-		return result, fmt.Errorf("error by select rows: %w", err)
+		return result, fmt.Errorf("unable query: %w", err)
 	}
 
 	defer rows.Close()
@@ -406,7 +406,7 @@ func (s *DBStorage) attemptGetCounterList(ctx context.Context) (map[string]int64
 	result := make(map[string]int64)
 	rows, err := s.db.Query(ctx, "SELECT name, value FROM counter")
 	if err != nil {
-		return result, fmt.Errorf("error get counter list: %w", err)
+		return result, fmt.Errorf("unable query: %w", err)
 	}
 
 	defer rows.Close()
@@ -456,7 +456,7 @@ func (s *DBStorage) attemptGetGaugeList(ctx context.Context) (map[string]float64
 	result := make(map[string]float64)
 	rows, err := s.db.Query(ctx, "SELECT name, value FROM gauge")
 	if err != nil {
-		return result, fmt.Errorf("unable to query gauge list: %w", err)
+		return result, fmt.Errorf("unable to query: %w", err)
 	}
 
 	defer rows.Close()
