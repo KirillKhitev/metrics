@@ -49,12 +49,12 @@ func (ch *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch request.MType {
 	case "counter":
-		res = updateCounter(&mh, w, request.ID, strconv.FormatInt(*request.Delta, 10))
-		*request.Delta, _ = ch.Storage.GetCounter(request.ID)
+		res = updateCounter(r.Context(), &mh, w, request.ID, strconv.FormatInt(*request.Delta, 10))
+		*request.Delta, _ = ch.Storage.GetCounter(r.Context(), request.ID)
 
 	case "gauge":
-		res = updateGauge(&mh, w, request.ID, strconv.FormatFloat(*request.Value, 'g', -1, 64))
-		*request.Value, _ = ch.Storage.GetGauge(request.ID)
+		res = updateGauge(r.Context(), &mh, w, request.ID, strconv.FormatFloat(*request.Value, 'g', -1, 64))
+		*request.Value, _ = ch.Storage.GetGauge(r.Context(), request.ID)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 	}
@@ -64,7 +64,7 @@ func (ch *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if flags.Args.StoreInterval == 0 {
-		if err := ch.Storage.SaveToFile(); err != nil {
+		if err := ch.Storage.TrySaveToFile(); err != nil {
 			logger.Log.Error("Error by save metrics to file", zap.Error(err))
 		}
 	}

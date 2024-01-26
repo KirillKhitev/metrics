@@ -9,12 +9,14 @@ import (
 type Handlers struct {
 	Update     handlers.UpdateHandler
 	UpdateJSON handlers.UpdateJSONHandler
+	Updates    handlers.UpdatesHandler
 	List       handlers.ListHandler
 	Get        handlers.GetHandler
 	GetJSON    handlers.GetJSONHandler
+	Ping       handlers.PingHandler
 }
 
-func GetRouter(appStorage storage.MemStorage) chi.Router {
+func GetRouter(appStorage storage.Repository) chi.Router {
 	r := chi.NewRouter()
 
 	var myHandlers = Handlers{
@@ -22,6 +24,9 @@ func GetRouter(appStorage storage.MemStorage) chi.Router {
 			Storage: appStorage,
 		},
 		UpdateJSON: handlers.UpdateJSONHandler{
+			Storage: appStorage,
+		},
+		Updates: handlers.UpdatesHandler{
 			Storage: appStorage,
 		},
 		List: handlers.ListHandler{
@@ -33,10 +38,16 @@ func GetRouter(appStorage storage.MemStorage) chi.Router {
 		GetJSON: handlers.GetJSONHandler{
 			Storage: appStorage,
 		},
+		Ping: handlers.PingHandler{
+			Storage: appStorage,
+		},
 	}
 
 	r.Route("/", func(r chi.Router) {
 		r.Handle("/", &myHandlers.List)
+		r.Route("/updates", func(r chi.Router) {
+			r.Handle("/", &myHandlers.Updates)
+		})
 		r.Route("/update", func(r chi.Router) {
 			r.Handle("/", &myHandlers.UpdateJSON)
 			r.Route("/{typeMetric}", func(r chi.Router) {
@@ -54,6 +65,7 @@ func GetRouter(appStorage storage.MemStorage) chi.Router {
 				r.Handle("/{nameMetric}", &myHandlers.Get)
 			})
 		})
+		r.Handle("/ping", &myHandlers.Ping)
 	})
 
 	return r

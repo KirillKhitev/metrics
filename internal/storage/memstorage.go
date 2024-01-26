@@ -1,13 +1,16 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/logger"
-	"go.uber.org/zap"
+	"github.com/KirillKhitev/metrics/internal/metrics"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"io"
 	"os"
+	"time"
 )
 
 type MemStorage struct {
@@ -15,19 +18,35 @@ type MemStorage struct {
 	Gauge   map[string]float64
 }
 
-func (s *MemStorage) UpdateCounter(name string, value int64) error {
+func (s *MemStorage) UpdateCounter(ctx context.Context, name string, value int64) error {
 	s.Counter[name] += value
 
 	return nil
 }
 
-func (s *MemStorage) UpdateGauge(name string, value float64) error {
+func (s *MemStorage) UpdateCounters(ctx context.Context, data []metrics.Metrics) error {
+	for _, metrica := range data {
+		s.Counter[metrica.ID] += *metrica.Delta
+	}
+
+	return nil
+}
+
+func (s *MemStorage) UpdateGauge(ctx context.Context, name string, value float64) error {
 	s.Gauge[name] = value
 
 	return nil
 }
 
-func (s *MemStorage) Init() error {
+func (s *MemStorage) UpdateGauges(ctx context.Context, data []metrics.Metrics) error {
+	for _, metrica := range data {
+		s.Gauge[metrica.ID] = *metrica.Value
+	}
+
+	return nil
+}
+
+func (s *MemStorage) Init(ctx context.Context) error {
 	s.Counter = make(map[string]int64)
 	s.Gauge = make(map[string]float64)
 
@@ -35,17 +54,34 @@ func (s *MemStorage) Init() error {
 		return nil
 	}
 
-	file, err := os.OpenFile(flags.Args.FileStoragePath, os.O_RDONLY|os.O_CREATE, 0666)
+	if err := s.getDataFromFile(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *MemStorage) getDataFromFile() error {
+	var file *os.File
+	var err error
+
+	for i := 1; i <= AttemptCount; i++ {
+		file, err = os.OpenFile(flags.Args.FileStoragePath, os.O_RDONLY|os.O_CREATE, 0666)
+		if err != nil && i != AttemptCount {
+			continue
+		}
+
+		break
+	}
+
 	if err != nil {
-		logger.Log.Error("Error by get metrics from file", zap.Error(err))
-		return nil
+		return err
 	}
 
 	defer file.Close()
 
 	if err := json.NewDecoder(file).Decode(s); err != nil && err != io.EOF {
-		logger.Log.Error("Error by decode metrics from json", zap.Error(err))
-		return nil
+		return err
 	}
 
 	return nil
@@ -53,7 +89,7 @@ func (s *MemStorage) Init() error {
 
 var ErrNotFound = errors.New("not found")
 
-func (s *MemStorage) GetCounter(name string) (v int64, err error) {
+func (s *MemStorage) GetCounter(ctx context.Context, name string) (v int64, err error) {
 	v, ok := s.Counter[name]
 
 	if !ok {
@@ -63,7 +99,23 @@ func (s *MemStorage) GetCounter(name string) (v int64, err error) {
 	return v, nil
 }
 
-func (s *MemStorage) GetGauge(name string) (v float64, err error) {
+func (s *MemStorage) GetCounters(ctx context.Context, data []string) (map[string]int64, error) {
+	result := map[string]int64{}
+
+	for _, name := range data {
+		v, ok := s.Counter[name]
+
+		if !ok {
+			continue
+		}
+
+		result[name] = v
+	}
+
+	return result, nil
+}
+
+func (s *MemStorage) GetGauge(ctx context.Context, name string) (v float64, err error) {
 	v, ok := s.Gauge[name]
 
 	if !ok {
@@ -73,18 +125,50 @@ func (s *MemStorage) GetGauge(name string) (v float64, err error) {
 	return v, nil
 }
 
-func (s *MemStorage) GetCounterList() map[string]int64 {
+func (s *MemStorage) GetGauges(ctx context.Context, data []string) (map[string]float64, error) {
+	result := map[string]float64{}
+
+	for _, name := range data {
+		v, ok := s.Gauge[name]
+
+		if !ok {
+			continue
+		}
+
+		result[name] = v
+	}
+
+	return result, nil
+}
+
+func (s *MemStorage) GetCounterList(ctx context.Context) map[string]int64 {
 	return s.Counter
 }
 
-func (s *MemStorage) GetGaugeList() map[string]float64 {
+func (s *MemStorage) GetGaugeList(ctx context.Context) map[string]float64 {
 	return s.Gauge
 }
 
-func (s *MemStorage) SaveToFile() error {
+func (s *MemStorage) Close() error {
+	return nil
+}
+
+func (s *MemStorage) TrySaveToFile() error {
 	logger.Log.Info("Сохраняем метрики в файл")
 
-	file, err := os.OpenFile(flags.Args.FileStoragePath, os.O_WRONLY|os.O_CREATE, 0666)
+	var file *os.File
+	var err error
+
+	for i := 1; i <= AttemptCount; i++ {
+		file, err = os.OpenFile(flags.Args.FileStoragePath, os.O_WRONLY|os.O_CREATE, 0666)
+		if err != nil && i != AttemptCount {
+			time.Sleep(time.Duration(2*i-1) * time.Second)
+			continue
+		}
+
+		break
+	}
+
 	if err != nil {
 		return err
 	}
@@ -99,4 +183,8 @@ func (s *MemStorage) SaveToFile() error {
 	}
 
 	return nil
+}
+
+func (s *MemStorage) Ping(ctx context.Context) error {
+	return errors.New("it is not DB storage")
 }

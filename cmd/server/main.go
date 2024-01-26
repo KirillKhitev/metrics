@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/gzip"
 	"github.com/KirillKhitev/metrics/internal/logger"
@@ -27,41 +28,60 @@ func run() error {
 		return err
 	}
 
-	appStorage := storage.MemStorage{}
-	if err := appStorage.Init(); err != nil {
+	var appStorage storage.Repository
+
+	if flags.Args.DBConnectionString != "" {
+		appStorage = &storage.DBStorage{}
+	} else {
+		appStorage = &storage.MemStorage{}
+	}
+
+	if err := appStorage.Init(context.Background()); err != nil {
 		return err
 	}
 
-	go saveToFile(appStorage)
+	go intervalSaveToFile(appStorage)
+	go startServer(appStorage)
 
-	logger.Log.Info("Running server", zap.String("address", flags.Args.AddrRun))
-
-	return http.ListenAndServe(flags.Args.AddrRun, logger.RequestLogger(gzip.Middleware(server.GetRouter(appStorage))))
+	return catchTerminateSignal(appStorage)
 }
 
-func saveToFile(appStorage storage.MemStorage) {
+func startServer(appStorage storage.Repository) error {
+	logger.Log.Info("Running server", zap.String("address", flags.Args.AddrRun))
+
+	handler := gzip.Middleware(server.GetRouter(appStorage))
+
+	return http.ListenAndServe(flags.Args.AddrRun, logger.RequestLogger(handler))
+}
+
+func intervalSaveToFile(appStorage storage.Repository) {
 	ticker := make(<-chan time.Time)
 
 	if flags.Args.StoreInterval > 0 {
 		ticker = time.Tick(time.Second * time.Duration(flags.Args.StoreInterval))
 	}
 
+	for {
+		<-ticker
+		if err := appStorage.TrySaveToFile(); err != nil {
+			logger.Log.Error("Error by save metrics to file", zap.Error(err))
+		}
+	}
+}
+
+func catchTerminateSignal(appStorage storage.Repository) error {
 	terminateSignals := make(chan os.Signal, 1)
 
 	signal.Notify(terminateSignals, syscall.SIGINT, syscall.SIGTERM)
 
-	for {
-		select {
-		case <-ticker:
-			if err := appStorage.SaveToFile(); err != nil {
-				logger.Log.Error("Error by save metrics to file", zap.Error(err))
-			}
-
-		case <-terminateSignals:
-			if err := appStorage.SaveToFile(); err != nil {
-				logger.Log.Error("Error by save metrics to file", zap.Error(err))
-			}
-			os.Exit(1)
-		}
+	<-terminateSignals
+	if err := appStorage.TrySaveToFile(); err != nil {
+		logger.Log.Error("Error by save metrics to file", zap.Error(err))
 	}
+
+	appStorage.Close()
+
+	logger.Log.Info("Terminate app")
+
+	return nil
 }

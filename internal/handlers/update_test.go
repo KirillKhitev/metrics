@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"github.com/KirillKhitev/metrics/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -131,15 +132,15 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			appStorage := storage.MemStorage{}
 
-			if err := appStorage.Init(); err != nil {
+			if err := appStorage.Init(context.Background()); err != nil {
 				t.Fatal("Не удалось создать хранилище")
 			}
 
-			appStorage.UpdateCounter(tt.args.name, tt.args.counterValue)
-			appStorage.UpdateGauge(tt.args.name, tt.args.gaugeValue)
+			appStorage.UpdateCounter(context.TODO(), tt.args.name, tt.args.counterValue)
+			appStorage.UpdateGauge(context.TODO(), tt.args.name, tt.args.gaugeValue)
 
 			ch := &UpdateHandler{
-				Storage: appStorage,
+				Storage: &appStorage,
 			}
 
 			request := httptest.NewRequest(tt.args.method, tt.args.addr, nil)
@@ -154,10 +155,10 @@ func TestUpdateHandler_ServeHTTP(t *testing.T) {
 			defer res.Body.Close()
 
 			if tt.args.name != "" {
-				valCounter, _ := ch.Storage.GetCounter(tt.args.name)
+				valCounter, _ := ch.Storage.GetCounter(request.Context(), tt.args.name)
 				assert.Equal(t, tt.want.counterValue, valCounter)
 
-				valGauge, _ := ch.Storage.GetGauge(tt.args.name)
+				valGauge, _ := ch.Storage.GetGauge(request.Context(), tt.args.name)
 				assert.Equal(t, tt.want.gaugeValue, valGauge)
 			}
 		})

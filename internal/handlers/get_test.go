@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"github.com/KirillKhitev/metrics/internal/storage"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -127,20 +128,20 @@ func TestGetHandler_ServeHTTP(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			appStorage := storage.MemStorage{}
 
-			if err := appStorage.Init(); err != nil {
+			if err := appStorage.Init(context.Background()); err != nil {
 				t.Fatal("Не удалось создать хранилище")
 			}
 
 			for name, value := range tt.args.counter {
-				appStorage.UpdateCounter(name, value)
+				appStorage.UpdateCounter(context.TODO(), name, value)
 			}
 
 			for name, value := range tt.args.gauge {
-				appStorage.UpdateGauge(name, value)
+				appStorage.UpdateGauge(context.TODO(), name, value)
 			}
 
 			ch := &GetHandler{
-				Storage: appStorage,
+				Storage: &appStorage,
 			}
 
 			request := httptest.NewRequest(tt.args.method, tt.args.addr, nil)
