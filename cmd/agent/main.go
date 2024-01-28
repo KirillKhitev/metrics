@@ -68,7 +68,7 @@ func (a *agent) sendMetrics() {
 		}
 
 		for i := 1; i <= AttemptCount; i++ {
-			_, err := a.sendUpdate(data)
+			_, err = a.sendUpdate(data)
 			if err != nil {
 				log.Printf("Attempt%d send metrics, err: %v", i, err)
 
