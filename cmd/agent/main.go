@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/KirillKhitev/metrics/internal/metrics"
+	"github.com/KirillKhitev/metrics/internal/signature"
 	"github.com/go-resty/resty/v2"
 	"log"
 	"runtime"
@@ -93,20 +94,22 @@ func (a *agent) prepareDataForSend() ([]byte, error) {
 	data := make([]metrics.Metrics, 0)
 
 	for name, value := range metrics.PrepareCounterForSend(a.pollCount) {
+		valueMetric := value
 		metrica := metrics.Metrics{
 			ID:    name,
 			MType: "counter",
-			Delta: &value,
+			Delta: &valueMetric,
 		}
 
 		data = append(data, metrica)
 	}
 
 	for name, value := range metrics.PrepareGaugeForSend(&a.data) {
+		valueMetric := value
 		metrica := metrics.Metrics{
 			ID:    name,
 			MType: "gauge",
-			Value: &value,
+			Value: &valueMetric,
 		}
 
 		data = append(data, metrica)
@@ -129,10 +132,16 @@ func (a *agent) sendUpdate(data []byte) (*resty.Response, error) {
 		return nil, err
 	}
 
-	resp, err := a.client.R().
+	request := a.client.NewRequest().
 		SetBody(dataCompress).
-		SetHeader("Content-Encoding", "gzip").
-		Post(url)
+		SetHeader("Content-Encoding", "gzip")
+
+	if flags.Key != "" {
+		hashSum := signature.GetHash(dataCompress, flags.Key)
+		request.SetHeader("HashSHA256", hashSum)
+	}
+
+	resp, err := request.Post(url)
 
 	return resp, err
 }
