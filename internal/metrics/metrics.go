@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"fmt"
+	"github.com/shirou/gopsutil/v3/mem"
 	"math/rand"
 	"reflect"
 	"runtime"
@@ -36,35 +38,86 @@ var runtimeMetricsNames = []string{
 	"TotalAlloc",
 }
 
-func PrepareGaugeForSend(memStats *runtime.MemStats) (gauge map[string]float64) {
-	gauge = make(map[string]float64)
+func PrepareRuntimeMetrics(memStats *runtime.MemStats) []Metrics {
+	data := make([]Metrics, 0)
 
 	for _, name := range runtimeMetricsNames {
 		val := reflect.ValueOf(*memStats).FieldByName(name)
 
-		var value float64
+		value := getFloat64FromValueObj(val)
 
-		if val.CanFloat() {
-			value = val.Float()
-		}
-
-		if val.CanUint() {
-			value = float64(val.Uint())
-		}
-
-		gauge[name] = value
+		data = append(data, Metrics{
+			ID:    name,
+			MType: "gauge",
+			Value: &value,
+		})
 	}
 
-	gauge["RandomValue"] = rand.Float64()
+	randValue := rand.Float64()
+	data = append(data, Metrics{
+		ID:    "RandomValue",
+		MType: "gauge",
+		Value: &randValue,
+	})
 
-	return
+	return data
 }
 
-func PrepareCounterForSend(PollCount int64) (counter map[string]int64) {
-	counter = make(map[string]int64)
-	counter["PollCount"] = PollCount
+func getFloat64FromValueObj(val reflect.Value) float64 {
+	var value float64
 
-	return
+	if val.CanFloat() {
+		value = val.Float()
+	}
+
+	if val.CanUint() {
+		value = float64(val.Uint())
+	}
+
+	return value
+}
+
+func PrepareMemstatsMetrics(stats *mem.SwapMemoryStat) []Metrics {
+	data := make([]Metrics, 0)
+
+	total := float64(stats.Total)
+	data = append(data, Metrics{
+		ID:    "TotalMemory",
+		MType: "gauge",
+		Value: &total,
+	})
+
+	free := float64(stats.Free)
+	data = append(data, Metrics{
+		ID:    "FreeMemory",
+		MType: "gauge",
+		Value: &free,
+	})
+
+	return data
+}
+
+func PrepareCPUMetrics(stats []float64) []Metrics {
+	data := make([]Metrics, 0)
+
+	for index, value := range stats {
+		value := value
+		data = append(data, Metrics{
+			ID:    fmt.Sprintf("CPUutilization%d", index+1),
+			MType: "gauge",
+			Value: &value,
+		})
+	}
+
+	return data
+}
+
+func PreparePollCounterMetric(PollCount int64) Metrics {
+	return Metrics{
+		ID:    "PollCount",
+		MType: "counter",
+		Delta: &PollCount,
+	}
 }
 
 type Metrics struct {

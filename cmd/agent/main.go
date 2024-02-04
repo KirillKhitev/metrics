@@ -8,19 +8,31 @@ import (
 	"github.com/KirillKhitev/metrics/internal/metrics"
 	"github.com/KirillKhitev/metrics/internal/signature"
 	"github.com/go-resty/resty/v2"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 	"log"
 	"runtime"
-	"sync"
 	"time"
 )
 
 const AttemptCount = 4
 
 type agent struct {
-	sync.Mutex
-	client    *resty.Client
-	data      runtime.MemStats
-	pollCount int64
+	client       *resty.Client
+	runtimeStats runtime.MemStats
+	memStats     mem.SwapMemoryStat
+	cpuStats     []float64
+	pollCount    int64
+	dataChan     chan []metrics.Metrics
+}
+
+func NewAgent() *agent {
+	return &agent{
+		client:       resty.New(),
+		runtimeStats: runtime.MemStats{},
+		memStats:     mem.SwapMemoryStat{},
+		dataChan:     make(chan []metrics.Metrics),
+	}
 }
 
 func (a *agent) Compress(data []byte) ([]byte, error) {
@@ -41,34 +53,53 @@ func (a *agent) Compress(data []byte) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (a *agent) getMetrics() {
+func (a *agent) getMetricsFromRuntime() {
 	ticker := time.Tick(time.Second * time.Duration(flags.PollInterval))
 
 	for {
 		<-ticker
-		a.Lock()
-		runtime.ReadMemStats(&a.data)
+		runtime.ReadMemStats(&a.runtimeStats)
 		a.pollCount++
-		a.Unlock()
 	}
 }
 
-func (a *agent) sendMetrics() {
-	ticker := time.Tick(time.Second * time.Duration(flags.ReportInterval))
+func (a *agent) getOtherMetrics() {
+	ticker := time.Tick(time.Second * time.Duration(flags.PollInterval))
 
 	for {
 		<-ticker
-		a.Lock()
-
-		data, err := a.prepareDataForSend()
+		memStats, err := mem.SwapMemory()
 		if err != nil {
-			log.Printf("Failure prepare data for send: %s", err)
-			a.Unlock()
-			continue
+			log.Printf("Failure get metrics SwapMemory: %s", err)
+		}
+		a.memStats = *memStats
+
+		cpuStats, err := cpu.Percent(0, true)
+		if err != nil {
+			log.Printf("Failure get metrics cpuStats: %s", err)
+			return
+		}
+
+		a.cpuStats = cpuStats
+	}
+}
+
+func (a *agent) sender(idWorker int) {
+	for batchData := range a.dataChan {
+		data, err := json.Marshal(batchData)
+		if err != nil {
+			err = fmt.Errorf("error by encode metrics: %v, error: %w", data, err)
+			return
+		}
+
+		dataCompress, err := a.Compress(data)
+		if err != nil {
+			err = fmt.Errorf("error by compress metrics: %v, error: %w", data, err)
+			return
 		}
 
 		for i := 1; i <= AttemptCount; i++ {
-			_, err = a.sendUpdate(data)
+			_, err := a.send(dataCompress)
 			if err != nil {
 				log.Printf("Attempt%d send metrics, err: %v", i, err)
 
@@ -85,59 +116,35 @@ func (a *agent) sendMetrics() {
 		if err != nil {
 			log.Println("Failure send metrics")
 		}
-
-		a.Unlock()
 	}
 }
 
-func (a *agent) prepareDataForSend() ([]byte, error) {
-	data := make([]metrics.Metrics, 0)
+func (a *agent) workSenders() {
+	defer close(a.dataChan)
 
-	for name, value := range metrics.PrepareCounterForSend(a.pollCount) {
-		valueMetric := value
-		metrica := metrics.Metrics{
-			ID:    name,
-			MType: "counter",
-			Delta: &valueMetric,
-		}
+	ticker := time.Tick(time.Second * time.Duration(flags.ReportInterval))
 
-		data = append(data, metrica)
+	for {
+		<-ticker
+
+		data := metrics.PrepareRuntimeMetrics(&a.runtimeStats)
+		data = append(data, metrics.PrepareMemstatsMetrics(&a.memStats)...)
+		data = append(data, metrics.PrepareCPUMetrics(a.cpuStats)...)
+		data = append(data, metrics.PreparePollCounterMetric(a.pollCount))
+
+		a.dataChan <- data
 	}
-
-	for name, value := range metrics.PrepareGaugeForSend(&a.data) {
-		valueMetric := value
-		metrica := metrics.Metrics{
-			ID:    name,
-			MType: "gauge",
-			Value: &valueMetric,
-		}
-
-		data = append(data, metrica)
-	}
-
-	result, err := json.Marshal(data)
-	if err != nil {
-		err = fmt.Errorf("error by encode metric: %v, error: %w", data, err)
-		return result, err
-	}
-
-	return result, nil
 }
 
-func (a *agent) sendUpdate(data []byte) (*resty.Response, error) {
+func (a *agent) send(data []byte) (*resty.Response, error) {
 	url := fmt.Sprintf("http://%s/updates/", flags.AddrRun)
 
-	dataCompress, err := a.Compress(data)
-	if err != nil {
-		return nil, err
-	}
-
 	request := a.client.NewRequest().
-		SetBody(dataCompress).
+		SetBody(data).
 		SetHeader("Content-Encoding", "gzip")
 
 	if flags.Key != "" {
-		hashSum := signature.GetHash(dataCompress, flags.Key)
+		hashSum := signature.GetHash(data, flags.Key)
 		request.SetHeader("HashSHA256", hashSum)
 	}
 
@@ -147,12 +154,16 @@ func (a *agent) sendUpdate(data []byte) (*resty.Response, error) {
 }
 
 func main() {
-	agent := agent{}
-	agent.client = resty.New()
+	agent := NewAgent()
 
 	flags.ParseFlags()
 
-	go agent.getMetrics()
+	go agent.getMetricsFromRuntime()
+	go agent.getOtherMetrics()
 
-	agent.sendMetrics()
+	for w := 1; w <= flags.RateLimit; w++ {
+		go agent.sender(w)
+	}
+
+	agent.workSenders()
 }
