@@ -84,24 +84,25 @@ func (a *agent) getOtherMetrics() {
 	}
 }
 
-func (a *agent) sender(idWorker int) {
+func (a *agent) sender(idSender int) {
 	for batchData := range a.dataChan {
 		data, err := json.Marshal(batchData)
 		if err != nil {
-			err = fmt.Errorf("error by encode metrics: %v, error: %w", data, err)
-			return
+			log.Printf("sender %d, error by encode metrics: %v, error: %s", idSender, data, err)
+			continue
 		}
 
 		dataCompress, err := a.Compress(data)
 		if err != nil {
-			err = fmt.Errorf("error by compress metrics: %v, error: %w", data, err)
-			return
+			log.Printf("sender %d, error by compress metrics: %v, error: %s", idSender, data, err)
+			continue
 		}
 
+		var errSending error
 		for i := 1; i <= AttemptCount; i++ {
-			_, err := a.send(dataCompress)
-			if err != nil {
-				log.Printf("Attempt%d send metrics, err: %v", i, err)
+			_, errSending = a.send(dataCompress)
+			if errSending != nil {
+				log.Printf("sender %d, attempt%d send metrics, err: %s", idSender, i, errSending)
 
 				if i < AttemptCount {
 					time.Sleep(time.Duration(2*i-1) * time.Second)
@@ -113,8 +114,8 @@ func (a *agent) sender(idWorker int) {
 			break
 		}
 
-		if err != nil {
-			log.Println("Failure send metrics")
+		if errSending != nil {
+			log.Printf("sender %d, failure send metrics", idSender)
 		}
 	}
 }
