@@ -6,6 +6,7 @@ import (
 	"github.com/KirillKhitev/metrics/internal/logger"
 	"github.com/KirillKhitev/metrics/internal/metrics"
 	"go.uber.org/zap"
+	"io"
 	"net/http"
 )
 
@@ -122,7 +123,7 @@ func (ch *UpdatesHandler) getDataFromRequest(r *http.Request) ([]metrics.Metrics
 	gauges := []metrics.Metrics{}
 
 	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(&request); err != nil {
+	if err := dec.Decode(&request); err != nil && err != io.EOF {
 		return counters, gauges, err
 	}
 

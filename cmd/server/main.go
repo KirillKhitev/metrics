@@ -6,6 +6,7 @@ import (
 	"github.com/KirillKhitev/metrics/internal/gzip"
 	"github.com/KirillKhitev/metrics/internal/logger"
 	"github.com/KirillKhitev/metrics/internal/server"
+	"github.com/KirillKhitev/metrics/internal/signature"
 	"github.com/KirillKhitev/metrics/internal/storage"
 	"go.uber.org/zap"
 	"net/http"
@@ -50,6 +51,7 @@ func startServer(appStorage storage.Repository) error {
 	logger.Log.Info("Running server", zap.String("address", flags.Args.AddrRun))
 
 	handler := gzip.Middleware(server.GetRouter(appStorage))
+	handler = signature.Middleware(handler)
 
 	return http.ListenAndServe(flags.Args.AddrRun, logger.RequestLogger(handler))
 }
