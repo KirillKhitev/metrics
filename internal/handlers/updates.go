@@ -35,7 +35,7 @@ func (ch *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := make([]metrics.Metrics, 0)
+	response := make([]metrics.Metrics, 0, len(counters)+len(gauges))
 
 	if response, err = ch.prepareResponseCounters(response, r, counters); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

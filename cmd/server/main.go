@@ -10,6 +10,7 @@ import (
 	"github.com/KirillKhitev/metrics/internal/storage"
 	"go.uber.org/zap"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -43,6 +44,7 @@ func run() error {
 
 	go intervalSaveToFile(appStorage)
 	go startServer(appStorage)
+	go startServerPprof()
 
 	return catchTerminateSignal(appStorage)
 }
@@ -86,4 +88,8 @@ func catchTerminateSignal(appStorage storage.Repository) error {
 	logger.Log.Info("Terminate app")
 
 	return nil
+}
+
+func startServerPprof() {
+	http.ListenAndServe(flags.Args.AddrPprof, nil)
 }
