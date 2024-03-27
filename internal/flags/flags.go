@@ -16,6 +16,7 @@ type FlagsServer struct {
 	Restore            bool
 	DBConnectionString string
 	Key                string
+	AddrPprof          string
 }
 
 func (f *FlagsServer) Parse() {
@@ -25,10 +26,15 @@ func (f *FlagsServer) Parse() {
 	flag.StringVar(&f.DBConnectionString, "d", "", "string for connection to DB, format 'host=%s port=%s user=%s password=%s dbname=%s sslmode=%s'")
 	flag.BoolVar(&f.Restore, "r", true, "restore metrics from file")
 	flag.StringVar(&f.Key, "k", "", "key for signature request data")
+	flag.StringVar(&f.AddrPprof, "p", ":8090", "address and port to pprof server")
 	flag.Parse()
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
 		f.AddrRun = envRunAddr
+	}
+
+	if envAddrPprof := os.Getenv("ADDRESS_PPROF"); envAddrPprof != "" {
+		f.AddrPprof = envAddrPprof
 	}
 
 	if envFileStoragePath := os.Getenv("FILE_STORAGE_PATH"); envFileStoragePath != "" {

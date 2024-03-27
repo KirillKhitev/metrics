@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 )
@@ -15,18 +16,19 @@ func (ch *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html")
 
-	result := "<b>Counter:</b><br/>"
+	buf := bytes.Buffer{}
+	buf.WriteString("<b>Counter:</b><br/>")
 
 	for name, value := range ch.Storage.GetCounterList(r.Context()) {
-		result += fmt.Sprintf("<p>%s: %d</p>", name, value)
+		buf.WriteString(fmt.Sprintf("<p>%s: %d</p>", name, value))
 	}
 
-	result += "<br/><br/><b>Gauge:</b><br/>"
+	buf.WriteString("<br/><br/><b>Gauge:</b><br/>")
 
 	for name, value := range ch.Storage.GetGaugeList(r.Context()) {
-		result += fmt.Sprintf("<p>%s: %g</p>", name, value)
+		buf.WriteString(fmt.Sprintf("<p>%s: %g</p>", name, value))
 	}
 
-	w.Write([]byte(result))
+	w.Write(buf.Bytes())
 	w.WriteHeader(http.StatusOK)
 }
