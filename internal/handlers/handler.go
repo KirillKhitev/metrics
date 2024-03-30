@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"context"
-	"github.com/KirillKhitev/metrics/internal/storage"
 	"net/http"
 	"strconv"
+
+	"github.com/KirillKhitev/metrics/internal/storage"
 )
 
 type MyHandler struct {

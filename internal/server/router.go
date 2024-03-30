@@ -1,9 +1,10 @@
 package server
 
 import (
+	"github.com/go-chi/chi/v5"
+
 	"github.com/KirillKhitev/metrics/internal/handlers"
 	"github.com/KirillKhitev/metrics/internal/storage"
-	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {

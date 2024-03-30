@@ -1,9 +1,11 @@
 package handlers
 
 import (
-	"github.com/KirillKhitev/metrics/internal/logger"
-	"go.uber.org/zap"
 	"net/http"
+
+	"go.uber.org/zap"
+
+	"github.com/KirillKhitev/metrics/internal/logger"
 )
 
 type PingHandler MyHandler

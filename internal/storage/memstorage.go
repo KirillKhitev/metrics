@@ -4,13 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/KirillKhitev/metrics/internal/flags"
-	"github.com/KirillKhitev/metrics/internal/logger"
-	"github.com/KirillKhitev/metrics/internal/metrics"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"io"
 	"os"
 	"time"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/KirillKhitev/metrics/internal/flags"
+	"github.com/KirillKhitev/metrics/internal/logger"
+	"github.com/KirillKhitev/metrics/internal/metrics"
 )
 
 type MemStorage struct {

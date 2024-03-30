@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"github.com/KirillKhitev/metrics/internal/flags"
-	"github.com/KirillKhitev/metrics/internal/logger"
-	"go.uber.org/zap"
 	"net/http"
 	"strings"
+
+	"go.uber.org/zap"
+
+	"github.com/KirillKhitev/metrics/internal/flags"
+	"github.com/KirillKhitev/metrics/internal/logger"
 )
 
 type UpdateHandler MyHandler

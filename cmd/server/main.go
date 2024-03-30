@@ -2,19 +2,21 @@ package main
 
 import (
 	"context"
-	"github.com/KirillKhitev/metrics/internal/flags"
-	"github.com/KirillKhitev/metrics/internal/gzip"
-	"github.com/KirillKhitev/metrics/internal/logger"
-	"github.com/KirillKhitev/metrics/internal/server"
-	"github.com/KirillKhitev/metrics/internal/signature"
-	"github.com/KirillKhitev/metrics/internal/storage"
-	"go.uber.org/zap"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/KirillKhitev/metrics/internal/flags"
+	"github.com/KirillKhitev/metrics/internal/gzip"
+	"github.com/KirillKhitev/metrics/internal/logger"
+	"github.com/KirillKhitev/metrics/internal/server"
+	"github.com/KirillKhitev/metrics/internal/signature"
+	"github.com/KirillKhitev/metrics/internal/storage"
 )
 
 func main() {

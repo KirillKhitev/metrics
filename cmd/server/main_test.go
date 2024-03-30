@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
-	"github.com/KirillKhitev/metrics/internal/server"
-	"github.com/KirillKhitev/metrics/internal/storage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/KirillKhitev/metrics/internal/server"
+	"github.com/KirillKhitev/metrics/internal/storage"
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.Response, string) {

@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/KirillKhitev/metrics/internal/metrics"
-	"github.com/KirillKhitev/metrics/internal/storage"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/KirillKhitev/metrics/internal/metrics"
+	"github.com/KirillKhitev/metrics/internal/storage"
 )
 
 func TestGetJSONHandler_ServeHTTP(t *testing.T) {

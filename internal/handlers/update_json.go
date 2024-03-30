@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
+
+	"go.uber.org/zap"
+
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/logger"
 	"github.com/KirillKhitev/metrics/internal/metrics"
-	"go.uber.org/zap"
-	"net/http"
-	"strconv"
 )
 
 type UpdateJSONHandler MyHandler

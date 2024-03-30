@@ -4,16 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/KirillKhitev/metrics/internal/flags"
-	"github.com/KirillKhitev/metrics/internal/logger"
-	"github.com/KirillKhitev/metrics/internal/metrics"
+	"time"
+
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
-	"time"
+
+	"github.com/KirillKhitev/metrics/internal/flags"
+	"github.com/KirillKhitev/metrics/internal/logger"
+	"github.com/KirillKhitev/metrics/internal/metrics"
 )
 
 type DBStorage struct {

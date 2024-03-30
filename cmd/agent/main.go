@@ -5,14 +5,16 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/KirillKhitev/metrics/internal/metrics"
-	"github.com/KirillKhitev/metrics/internal/signature"
-	"github.com/go-resty/resty/v2"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
 	"log"
 	"runtime"
 	"time"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+
+	"github.com/KirillKhitev/metrics/internal/metrics"
+	"github.com/KirillKhitev/metrics/internal/signature"
 )
 
 const AttemptCount = 4

@@ -2,9 +2,10 @@ package storage
 
 import (
 	"context"
+	"testing"
+
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/metrics"
-	"testing"
 )
 
 const benchDBConnectionString = "host=localhost user=postgres password=sa123456 dbname=testdb sslmode=disable"

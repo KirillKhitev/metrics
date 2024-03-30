@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"net/http"
+
+	"go.uber.org/zap"
+
 	"github.com/KirillKhitev/metrics/internal/logger"
 	"github.com/KirillKhitev/metrics/internal/metrics"
-	"go.uber.org/zap"
-	"net/http"
 )
 
 type GetJSONHandler MyHandler

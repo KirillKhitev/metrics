@@ -5,9 +5,10 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/KirillKhitev/metrics/internal/flags"
 	"io"
 	"net/http"
+
+	"github.com/KirillKhitev/metrics/internal/flags"
 )
 
 type signatureWriter struct {

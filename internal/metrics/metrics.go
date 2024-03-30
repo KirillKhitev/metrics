@@ -2,10 +2,11 @@ package metrics
 
 import (
 	"fmt"
-	"github.com/shirou/gopsutil/v3/mem"
 	"math/rand"
 	"reflect"
 	"runtime"
+
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 var runtimeMetricsNames = []string{
