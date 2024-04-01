@@ -18,8 +18,9 @@ import (
 	"github.com/KirillKhitev/metrics/internal/metrics"
 )
 
+// DBStorage - хранилище в БД
 type DBStorage struct {
-	db *pgxpool.Pool
+	db *pgxpool.Pool // Соединение с БД
 }
 
 func (s *DBStorage) UpdateCounter(ctx context.Context, name string, value int64) error {

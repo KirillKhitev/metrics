@@ -10,13 +10,14 @@ import (
 var flags flagsAgent = flagsAgent{}
 
 type flagsAgent struct {
-	AddrRun        string
-	PollInterval   int
-	ReportInterval int
-	RateLimit      int
-	Key            string
+	AddrRun        string // Адрес и порт, куда Агент будет слать данные
+	PollInterval   int    // Интервал сбора метрик
+	ReportInterval int    // Интервал отправки метрик
+	RateLimit      int    // Количество воркеров для отправки
+	Key            string // Ключ для подписи данных
 }
 
+// ParseFlags парсит аргументы запуска Агента в переменную flags.
 func (f *flagsAgent) ParseFlags() {
 	flag.StringVar(&f.AddrRun, "a", "localhost:8080", "address and port to run server")
 	flag.IntVar(&f.PollInterval, "p", 2, "poll metrics interval")

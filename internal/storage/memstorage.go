@@ -15,6 +15,7 @@ import (
 	"github.com/KirillKhitev/metrics/internal/metrics"
 )
 
+// MemStorage - хранилище в оперативной памяти
 type MemStorage struct {
 	Counter map[string]int64
 	Gauge   map[string]float64

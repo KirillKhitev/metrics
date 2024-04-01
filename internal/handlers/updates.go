@@ -12,8 +12,22 @@ import (
 	"github.com/KirillKhitev/metrics/internal/metrics"
 )
 
+// UpdatesHandler отвечает за обработку POST-запроса /updates.
 type UpdatesHandler MyHandler
 
+/*
+ServeHTTP служит для добавления/обновления списка метрик.
+
+Коды ответа:
+
+• 200 - успешный запрос.
+
+• 400 - неверный запрос.
+
+• 405 - метод запроса отличен от POST.
+
+• 500 - при возникновении внутренней ошибки.
+*/
 func (ch *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -68,6 +82,7 @@ func (ch *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// prepareResponseCounters готовит список метрик с типом counter из хранилища.
 func (ch *UpdatesHandler) prepareResponseCounters(response []metrics.Metrics, r *http.Request, counters []metrics.Metrics) ([]metrics.Metrics, error) {
 	var names []string
 
@@ -93,6 +108,7 @@ func (ch *UpdatesHandler) prepareResponseCounters(response []metrics.Metrics, r 
 	return response, nil
 }
 
+// prepareResponseGauges готовит список метрик с типом gauge из Хранилища.
 func (ch *UpdatesHandler) prepareResponseGauges(response []metrics.Metrics, r *http.Request, gauges []metrics.Metrics) ([]metrics.Metrics, error) {
 	var names []string
 
@@ -118,6 +134,7 @@ func (ch *UpdatesHandler) prepareResponseGauges(response []metrics.Metrics, r *h
 	return response, nil
 }
 
+// getDataFromRequest формирует список метрик из Запроса.
 func (ch *UpdatesHandler) getDataFromRequest(r *http.Request) ([]metrics.Metrics, []metrics.Metrics, error) {
 	var request []metrics.Metrics
 

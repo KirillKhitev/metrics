@@ -1,3 +1,4 @@
+// Сервер для приема метрик.
 package main
 
 import (

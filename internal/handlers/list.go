@@ -6,8 +6,18 @@ import (
 	"net/http"
 )
 
+// ListHandler отвечает за обработку GET-запроса /.
 type ListHandler MyHandler
 
+/*
+ServeHTTP возвращает HTML-список всех метрик.
+
+Коды ответа:
+
+• 200 - успешный запрос.
+
+• 405 - метод запроса отличен от GET.
+*/
 func (ch *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)

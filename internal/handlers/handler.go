@@ -8,8 +8,9 @@ import (
 	"github.com/KirillKhitev/metrics/internal/storage"
 )
 
+// MyHandler - хендлер запроса.
 type MyHandler struct {
-	Storage storage.Repository
+	Storage storage.Repository // Объект хранилища.
 }
 
 func updateCounter(ctx context.Context, ch *MyHandler, w http.ResponseWriter, name string, valStr string) bool {

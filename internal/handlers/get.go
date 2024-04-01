@@ -6,8 +6,22 @@ import (
 	"strings"
 )
 
+// GetHandler отвечает за обработку GET-запроса /value/{type}/{name}.
 type GetHandler MyHandler
 
+/*
+ServeHTTP возвращает значение метрики по ее названию и типу.
+
+Коды ответа:
+
+• 200 - успешный запрос.
+
+• 400 - неуказан тип метрики, либо этот тип не поддерживается.
+
+• 404 - неуказанно название метрики, либо по данной метрике нет данных.
+
+• 405 - метод запроса отличен от GET.
+*/
 func (ch *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)

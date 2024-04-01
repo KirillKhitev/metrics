@@ -10,8 +10,22 @@ import (
 	"github.com/KirillKhitev/metrics/internal/metrics"
 )
 
+// GetJSONHandler отвечает за обработку POST-запроса /value.
 type GetJSONHandler MyHandler
 
+/*
+ServeHTTP возвращает json-представление объекта Метрики.
+
+Коды ответа:
+
+• 200 - успешный запрос.
+
+• 400 - метод запроса отличен от POST, или не передан тип метрики или он не поддерживается.
+
+• 404 - неуказанно название метрики, либо по данной метрике нет данных.
+
+• 500 - при возникновении ошибки.
+*/
 func (ch *GetJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusBadRequest)

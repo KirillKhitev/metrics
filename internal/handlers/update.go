@@ -10,8 +10,22 @@ import (
 	"github.com/KirillKhitev/metrics/internal/logger"
 )
 
+// UpdateHandler отвечает за обработку POST-запроса /update/{type}/{name}.
 type UpdateHandler MyHandler
 
+/*
+ServeHTTP служит для добавления/обновления отдельной метрики.
+
+Коды ответа:
+
+• 200 - успешный запрос.
+
+• 400 - неуказаны тип или значение метрики, или тип метрики неподдерживается.
+
+• 404 - неуказано название метрики.
+
+• 405 - метод запроса отличен от POST.
+*/
 func (ch *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)

@@ -1,3 +1,4 @@
+// Определяет роутинг приложения
 package server
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/KirillKhitev/metrics/internal/storage"
 )
 
+// Handlers - список хендлеров.
 type Handlers struct {
 	Update     handlers.UpdateHandler
 	UpdateJSON handlers.UpdateJSONHandler
@@ -17,6 +19,7 @@ type Handlers struct {
 	Ping       handlers.PingHandler
 }
 
+// GetRouter возвращает настроенный роутер
 func GetRouter(appStorage storage.Repository) chi.Router {
 	r := chi.NewRouter()
 

@@ -1,3 +1,4 @@
+// Пакет отвечает за компрессию/декомпрессию запросов и ответов сервера
 package gzip
 
 import (
@@ -7,6 +8,7 @@ import (
 	"strings"
 )
 
+// Middleware, если агент поддерживает сжатие gzip, распаковывает данные в запросе и сжимает ответ.
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ow := w
