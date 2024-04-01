@@ -1,11 +1,14 @@
+// Определяет роутинг приложения
 package server
 
 import (
+	"github.com/go-chi/chi/v5"
+
 	"github.com/KirillKhitev/metrics/internal/handlers"
 	"github.com/KirillKhitev/metrics/internal/storage"
-	"github.com/go-chi/chi/v5"
 )
 
+// Handlers - список хендлеров.
 type Handlers struct {
 	Update     handlers.UpdateHandler
 	UpdateJSON handlers.UpdateJSONHandler
@@ -16,6 +19,7 @@ type Handlers struct {
 	Ping       handlers.PingHandler
 }
 
+// GetRouter возвращает настроенный роутер
 func GetRouter(appStorage storage.Repository) chi.Router {
 	r := chi.NewRouter()
 

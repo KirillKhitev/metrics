@@ -1,13 +1,16 @@
+// Модель объекта Метрика
 package metrics
 
 import (
 	"fmt"
-	"github.com/shirou/gopsutil/v3/mem"
 	"math/rand"
 	"reflect"
 	"runtime"
+
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
+// Список runtime-метрик
 var runtimeMetricsNames = []string{
 	"Alloc",
 	"BuckHashSys",
@@ -38,6 +41,7 @@ var runtimeMetricsNames = []string{
 	"TotalAlloc",
 }
 
+// PrepareRuntimeMetrics готовит список Runtime-метрик.
 func PrepareRuntimeMetrics(memStats *runtime.MemStats) []Metrics {
 	data := make([]Metrics, 0)
 
@@ -77,6 +81,7 @@ func getFloat64FromValueObj(val reflect.Value) float64 {
 	return value
 }
 
+// PrepareMemstatsMetrics готовит список Memstats-метрик.
 func PrepareMemstatsMetrics(stats *mem.SwapMemoryStat) []Metrics {
 	data := make([]Metrics, 0)
 
@@ -97,6 +102,7 @@ func PrepareMemstatsMetrics(stats *mem.SwapMemoryStat) []Metrics {
 	return data
 }
 
+// PrepareCPUMetrics готовит список CPU-метрик.
 func PrepareCPUMetrics(stats []float64) []Metrics {
 	data := make([]Metrics, 0)
 
@@ -112,6 +118,7 @@ func PrepareCPUMetrics(stats []float64) []Metrics {
 	return data
 }
 
+// PreparePollCounterMetric отдает PollCount-метрику.
 func PreparePollCounterMetric(PollCount int64) Metrics {
 	return Metrics{
 		ID:    "PollCount",
@@ -120,9 +127,10 @@ func PreparePollCounterMetric(PollCount int64) Metrics {
 	}
 }
 
+// Metrics структура метрики
 type Metrics struct {
-	ID    string   `json:"id"`
-	MType string   `json:"type"`
-	Delta *int64   `json:"delta,omitempty"`
-	Value *float64 `json:"value,omitempty"`
+	ID    string   `json:"id"`              // Название
+	MType string   `json:"type"`            // Тип, возможные значения: counter, gauge
+	Delta *int64   `json:"delta,omitempty"` // Значение (для типа counter)
+	Value *float64 `json:"value,omitempty"` // Значение (для типа gauge)
 }

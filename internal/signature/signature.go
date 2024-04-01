@@ -1,3 +1,5 @@
+// Пакет для подписи ответа Сервера и проверки запросов от Агента
+// Используется алгоритм sha256
 package signature
 
 import (
@@ -5,9 +7,10 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/KirillKhitev/metrics/internal/flags"
 	"io"
 	"net/http"
+
+	"github.com/KirillKhitev/metrics/internal/flags"
 )
 
 type signatureWriter struct {
@@ -36,6 +39,8 @@ func (s *signatureWriter) WriteHeader(statusCode int) {
 	s.w.WriteHeader(statusCode)
 }
 
+// Middleware валидирует пришедшие от Агента данные в соответствии с подписью.
+// При проваленной проверке возвращает код ответа 400.
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if flags.Args.Key == "" {
@@ -61,6 +66,7 @@ func Middleware(next http.Handler) http.Handler {
 	})
 }
 
+// GetHash вычисляет хеш строки
 func GetHash(data []byte, key string) string {
 	h := hmac.New(sha256.New, []byte(key))
 	h.Write(data)

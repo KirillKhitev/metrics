@@ -2,16 +2,34 @@ package handlers
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
+
+	"go.uber.org/zap"
+
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/logger"
 	"github.com/KirillKhitev/metrics/internal/metrics"
-	"go.uber.org/zap"
-	"net/http"
-	"strconv"
 )
 
+// UpdateJSONHandler отвечает за обработку POST-запроса /update.
 type UpdateJSONHandler MyHandler
 
+/*
+ServeHTTP служит для добавления/обновления отдельной метрики.
+
+Коды ответа:
+
+• 200 - успешный запрос.
+
+• 400 - неуказанны тип или значение метрики, или тип метрики не поддерживается.
+
+• 404 - неуказанно название метрики.
+
+• 405 - метод запроса отличен от POST.
+
+• 500 - при возникновении ошибки.
+*/
 func (ch *UpdateJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)

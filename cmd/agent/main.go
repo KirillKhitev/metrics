@@ -1,3 +1,6 @@
+// Агент для отправки метрик на сервер в формате JSON.
+// Слепок метрик отправляется целиком.
+// При ошибке отправки делаем 4 попытки. Между попытками - 2, 3 и 5 секунд соответственно.
 package main
 
 import (
@@ -5,16 +8,19 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/KirillKhitev/metrics/internal/metrics"
-	"github.com/KirillKhitev/metrics/internal/signature"
-	"github.com/go-resty/resty/v2"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
 	"log"
 	"runtime"
 	"time"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+
+	"github.com/KirillKhitev/metrics/internal/metrics"
+	"github.com/KirillKhitev/metrics/internal/signature"
 )
 
+// AttemptCount определяет количество попыток отправки данных на сервер
 const AttemptCount = 4
 
 type agent struct {
@@ -26,6 +32,7 @@ type agent struct {
 	dataChan     chan []metrics.Metrics
 }
 
+// NewAgent конструктор главной структуры приложения Агента.
 func NewAgent() *agent {
 	return &agent{
 		client:       resty.New(),
@@ -35,6 +42,7 @@ func NewAgent() *agent {
 	}
 }
 
+// Compress сжимает данные перед отправкой на сервер.
 func (a *agent) Compress(data []byte) ([]byte, error) {
 	var b bytes.Buffer
 

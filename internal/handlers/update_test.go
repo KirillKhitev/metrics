@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"context"
-	"github.com/KirillKhitev/metrics/internal/storage"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/KirillKhitev/metrics/internal/storage"
 )
 
 func TestUpdateHandler_ServeHTTP(t *testing.T) {

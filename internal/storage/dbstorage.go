@@ -4,20 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/KirillKhitev/metrics/internal/flags"
-	"github.com/KirillKhitev/metrics/internal/logger"
-	"github.com/KirillKhitev/metrics/internal/metrics"
+	"time"
+
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
-	"time"
+
+	"github.com/KirillKhitev/metrics/internal/flags"
+	"github.com/KirillKhitev/metrics/internal/logger"
+	"github.com/KirillKhitev/metrics/internal/metrics"
 )
 
+// DBStorage - хранилище в БД
 type DBStorage struct {
-	db *pgxpool.Pool
+	db *pgxpool.Pool // Соединение с БД
 }
 
 func (s *DBStorage) UpdateCounter(ctx context.Context, name string, value int64) error {

@@ -1,19 +1,23 @@
+// Сервер для приема метрик.
 package main
 
 import (
 	"context"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"go.uber.org/zap"
+
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/gzip"
 	"github.com/KirillKhitev/metrics/internal/logger"
 	"github.com/KirillKhitev/metrics/internal/server"
 	"github.com/KirillKhitev/metrics/internal/signature"
 	"github.com/KirillKhitev/metrics/internal/storage"
-	"go.uber.org/zap"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func main() {
@@ -43,6 +47,7 @@ func run() error {
 
 	go intervalSaveToFile(appStorage)
 	go startServer(appStorage)
+	go startServerPprof()
 
 	return catchTerminateSignal(appStorage)
 }
@@ -86,4 +91,8 @@ func catchTerminateSignal(appStorage storage.Repository) error {
 	logger.Log.Info("Terminate app")
 
 	return nil
+}
+
+func startServerPprof() {
+	http.ListenAndServe(flags.Args.AddrPprof, nil)
 }

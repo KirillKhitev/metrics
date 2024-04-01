@@ -1,3 +1,4 @@
+// Логгер он и есть логгер. Логгирует стадии работы приложения и входящие запросы к API.
 package logger
 
 import (
@@ -7,6 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Log - основной объект
 var Log *zap.Logger = zap.NewNop()
 
 type (
@@ -32,6 +34,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode
 }
 
+// Initialize создает объект Log.
 func Initialize(level string) error {
 	lvl, err := zap.ParseAtomicLevel(level)
 	if err != nil {
@@ -52,6 +55,7 @@ func Initialize(level string) error {
 	return nil
 }
 
+// RequestLogger логирует входящие запросы
 func RequestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
