@@ -418,16 +418,16 @@ func (s *DBStorage) attemptGetCounterList(ctx context.Context) (map[string]int64
 		var name string
 		var value int64
 
-		err = rows.Scan(&name, &value)
-		if err != nil {
-			return result, fmt.Errorf("unable to scan row: %w", err)
+		errScan := rows.Scan(&name, &value)
+		if errScan != nil {
+			return result, fmt.Errorf("unable to scan row: %w", errScan)
 		}
 
 		result[name] = value
 	}
 
-	if err := rows.Err(); err != nil {
-		return result, fmt.Errorf("cursor error: %w", err)
+	if errCursor := rows.Err(); errCursor != nil {
+		return result, fmt.Errorf("cursor error: %w", errCursor)
 	}
 
 	return result, err
@@ -468,16 +468,16 @@ func (s *DBStorage) attemptGetGaugeList(ctx context.Context) (map[string]float64
 		var name string
 		var value float64
 
-		err = rows.Scan(&name, &value)
-		if err != nil {
-			return result, fmt.Errorf("unable to scan row: %w", err)
+		errScan := rows.Scan(&name, &value)
+		if errScan != nil {
+			return result, fmt.Errorf("unable to scan row: %w", errScan)
 		}
 
 		result[name] = value
 	}
 
-	if err := rows.Err(); err != nil {
-		return result, fmt.Errorf("cursor error: %w", err)
+	if errCursor := rows.Err(); errCursor != nil {
+		return result, fmt.Errorf("cursor error: %w", errCursor)
 	}
 
 	return result, err
