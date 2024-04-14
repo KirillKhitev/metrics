@@ -71,9 +71,9 @@ func (ch *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	str, errJson := json.MarshalIndent(response, "", "    ")
-	if errJson != nil {
-		logger.Log.Error("cannot encode request JSON body", zap.Error(errJson))
+	str, errJSON := json.MarshalIndent(response, "", "    ")
+	if errJSON != nil {
+		logger.Log.Error("cannot encode request JSON body", zap.Error(errJSON))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
