@@ -23,6 +23,13 @@ import (
 // AttemptCount определяет количество попыток отправки данных на сервер
 const AttemptCount = 4
 
+// Флаги сборки
+var (
+	buildVersion string = "N/A" // Версия сборки
+	buildDate    string = "N/A" // Дата сборки
+	buildCommit  string = "N/A" // Комментарий сборки
+)
+
 type agent struct {
 	client       *resty.Client
 	runtimeStats runtime.MemStats
@@ -162,8 +169,16 @@ func (a *agent) send(data []byte) (*resty.Response, error) {
 	return resp, err
 }
 
+// printBuildInfo выводит в консоль информацию по сборке.
+func (a *agent) printBuildInfo() {
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+}
+
 func main() {
 	agent := NewAgent()
+	agent.printBuildInfo()
 
 	flags.ParseFlags()
 
