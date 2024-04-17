@@ -161,32 +161,41 @@ func runExitOnMainAnalyzer(pass *analysis.Pass) (interface{}, error) {
 		}
 
 		ast.Inspect(file, func(node ast.Node) bool {
-			switch x := node.(type) {
-			case *ast.FuncDecl:
-				if x.Name.Name != "main" {
-					return true
-				}
-
-				ast.Inspect(node, func(nodeMain ast.Node) bool {
-					switch xs := nodeMain.(type) {
-					case *ast.CallExpr:
-						switch fun := xs.Fun.(type) {
-						case *ast.SelectorExpr:
-							if fun.Sel.Name == "Exit" {
-								pass.Reportf(fun.Pos(), "вызов os.Exit в функции main запрещен")
-							}
-						}
-					}
-
-					return true
-				})
-
-				return false
+			x, ok := node.(*ast.FuncDecl)
+			if !ok {
+				return true
 			}
 
-			return true
+			if x.Name.Name != "main" {
+				return true
+			}
+
+			checkExitInMain(pass, node)
+
+			return false
 		})
 	}
 
 	return nil, nil
+}
+
+func checkExitInMain(pass *analysis.Pass, node ast.Node) {
+	ast.Inspect(node, func(nodeMain ast.Node) bool {
+		xs, ok := nodeMain.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+
+		fun, okFun := xs.Fun.(*ast.SelectorExpr)
+		if !okFun {
+			return true
+		}
+
+		if fun.Sel.Name == "Exit" {
+			pass.Reportf(fun.Pos(), "вызов os.Exit в функции main запрещен")
+			return false
+		}
+
+		return true
+	})
 }
