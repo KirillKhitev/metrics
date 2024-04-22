@@ -41,12 +41,12 @@ func (ch *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := ch.Storage.UpdateCounters(r.Context(), counters); err != nil {
+	if errUpdate := ch.Storage.UpdateCounters(r.Context(), counters); errUpdate != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if err := ch.Storage.UpdateGauges(r.Context(), gauges); err != nil {
+	if errUpdate := ch.Storage.UpdateGauges(r.Context(), gauges); errUpdate != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -66,14 +66,14 @@ func (ch *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if flags.Args.StoreInterval == 0 {
-		if err := ch.Storage.TrySaveToFile(); err != nil {
-			logger.Log.Error("Error by save metrics to file", zap.Error(err))
+		if errSaveFile := ch.Storage.TrySaveToFile(); errSaveFile != nil {
+			logger.Log.Error("Error by save metrics to file", zap.Error(errSaveFile))
 		}
 	}
 
-	str, err := json.MarshalIndent(response, "", "    ")
-	if err != nil {
-		logger.Log.Error("cannot encode request JSON body", zap.Error(err))
+	str, errJSON := json.MarshalIndent(response, "", "    ")
+	if errJSON != nil {
+		logger.Log.Error("cannot encode request JSON body", zap.Error(errJSON))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

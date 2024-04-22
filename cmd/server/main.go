@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -20,7 +21,15 @@ import (
 	"github.com/KirillKhitev/metrics/internal/storage"
 )
 
+// Флаги сборки
+var (
+	buildVersion string = "N/A" // Версия сборки
+	buildDate    string = "N/A" // Дата сборки
+	buildCommit  string = "N/A" // Комментарий сборки
+)
+
 func main() {
+	printBuildInfo()
 	flags.Args.Parse()
 
 	if err := run(); err != nil {
@@ -95,4 +104,11 @@ func catchTerminateSignal(appStorage storage.Repository) error {
 
 func startServerPprof() {
 	http.ListenAndServe(flags.Args.AddrPprof, nil)
+}
+
+// printBuildInfo выводит в консоль информацию по сборке.
+func printBuildInfo() {
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 }
