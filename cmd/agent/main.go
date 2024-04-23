@@ -12,6 +12,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/KirillKhitev/metrics/internal/mycrypto"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -107,7 +109,12 @@ func (a *agent) sender(idSender int) {
 			continue
 		}
 
-		dataCompress, err := a.Compress(data)
+		dataEncrypted, err := mycrypto.Encrypting(data, flags.CryptoKey)
+		if err != nil {
+			log.Fatalf("sender %d, %s", idSender, err)
+		}
+
+		dataCompress, err := a.Compress(dataEncrypted)
 		if err != nil {
 			log.Printf("sender %d, error by compress metrics: %v, error: %s", idSender, data, err)
 			continue

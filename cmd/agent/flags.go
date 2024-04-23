@@ -15,6 +15,7 @@ type flagsAgent struct {
 	ReportInterval int    // Интервал отправки метрик
 	RateLimit      int    // Количество воркеров для отправки
 	Key            string // Ключ для подписи данных
+	CryptoKey      string // Путь до файла с публичным ключом
 }
 
 // ParseFlags парсит аргументы запуска Агента в переменную flags.
@@ -24,6 +25,7 @@ func (f *flagsAgent) ParseFlags() {
 	flag.IntVar(&f.ReportInterval, "r", 10, "send metrics report interval")
 	flag.IntVar(&f.RateLimit, "l", 5, "request to server limit")
 	flag.StringVar(&f.Key, "k", "", "key for signature request data")
+	flag.StringVar(&f.CryptoKey, "crypto-key", "", "path to public key file")
 	flag.Parse()
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
@@ -56,5 +58,9 @@ func (f *flagsAgent) ParseFlags() {
 
 	if envKey := os.Getenv("KEY"); envKey != "" {
 		f.Key = envKey
+	}
+
+	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
+		f.CryptoKey = envCryptoKey
 	}
 }

@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/KirillKhitev/metrics/internal/mycrypto"
+
 	"go.uber.org/zap"
 
 	"github.com/KirillKhitev/metrics/internal/flags"
@@ -64,7 +66,8 @@ func run() error {
 func startServer(appStorage storage.Repository) error {
 	logger.Log.Info("Running server", zap.String("address", flags.Args.AddrRun))
 
-	handler := gzip.Middleware(server.GetRouter(appStorage))
+	handler := mycrypto.Middleware(server.GetRouter(appStorage))
+	handler = gzip.Middleware(handler)
 	handler = signature.Middleware(handler)
 
 	return http.ListenAndServe(flags.Args.AddrRun, logger.RequestLogger(handler))

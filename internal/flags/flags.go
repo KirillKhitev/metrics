@@ -19,6 +19,7 @@ type FlagsServer struct {
 	DBConnectionString string // Строка подключения а БД, формат 'host=%s port=%s user=%s password=%s dbname=%s sslmode=%s'
 	Key                string // Ключ для подписывания данных
 	AddrPprof          string // Адрес и порт для профилировщика
+	CryptoKey          string // Путь до файла с приватным ключом
 }
 
 // Parse разбирает аргументы запуска приложения в переменнную Args.
@@ -30,6 +31,7 @@ func (f *FlagsServer) Parse() {
 	flag.BoolVar(&f.Restore, "r", true, "restore metrics from file")
 	flag.StringVar(&f.Key, "k", "", "key for signature request data")
 	flag.StringVar(&f.AddrPprof, "p", ":8090", "address and port to pprof server")
+	flag.StringVar(&f.CryptoKey, "crypto-key", "", "path to private key file")
 	flag.Parse()
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
@@ -66,5 +68,9 @@ func (f *FlagsServer) Parse() {
 
 	if envKey := os.Getenv("KEY"); envKey != "" {
 		f.Key = envKey
+	}
+
+	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
+		f.CryptoKey = envCryptoKey
 	}
 }
