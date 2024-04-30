@@ -9,7 +9,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"runtime"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/KirillKhitev/metrics/internal/mycrypto"
@@ -33,21 +37,25 @@ var (
 )
 
 type agent struct {
-	client       *resty.Client
-	runtimeStats runtime.MemStats
-	memStats     mem.SwapMemoryStat
-	cpuStats     []float64
-	pollCount    int64
-	dataChan     chan []metrics.Metrics
+	client          *resty.Client
+	runtimeStats    runtime.MemStats
+	memStats        mem.SwapMemoryStat
+	cpuStats        []float64
+	pollCount       int64
+	dataChan        chan []metrics.Metrics
+	closeSenderChan chan struct{}
+	wg              *sync.WaitGroup
 }
 
 // NewAgent конструктор главной структуры приложения Агента.
 func NewAgent() *agent {
 	return &agent{
-		client:       resty.New(),
-		runtimeStats: runtime.MemStats{},
-		memStats:     mem.SwapMemoryStat{},
-		dataChan:     make(chan []metrics.Metrics),
+		client:          resty.New(),
+		runtimeStats:    runtime.MemStats{},
+		memStats:        mem.SwapMemoryStat{},
+		dataChan:        make(chan []metrics.Metrics),
+		closeSenderChan: make(chan struct{}),
+		wg:              &sync.WaitGroup{},
 	}
 }
 
@@ -102,49 +110,67 @@ func (a *agent) getOtherMetrics() {
 }
 
 func (a *agent) sender(idSender int) {
-	for batchData := range a.dataChan {
-		data, err := json.Marshal(batchData)
-		if err != nil {
-			log.Printf("sender %d, error by encode metrics: %v, error: %s", idSender, data, err)
-			continue
-		}
-
-		dataEncrypted, err := mycrypto.Encrypting(data, flags.CryptoKey)
-		if err != nil {
-			log.Fatalf("sender %d, %s", idSender, err)
-		}
-
-		dataCompress, err := a.Compress(dataEncrypted)
-		if err != nil {
-			log.Printf("sender %d, error by compress metrics: %v, error: %s", idSender, data, err)
-			continue
-		}
-
-		var errSending error
-		for i := 1; i <= AttemptCount; i++ {
-			_, errSending = a.send(dataCompress)
-			if errSending != nil {
-				log.Printf("sender %d, attempt%d send metrics, err: %s", idSender, i, errSending)
-
-				if i < AttemptCount {
-					time.Sleep(time.Duration(2*i-1) * time.Second)
+	for {
+		select {
+		case <-a.closeSenderChan:
+			a.wg.Done()
+			log.Printf("Stop Sender #%d", idSender)
+			return
+		default:
+			select {
+			case batchData := <-a.dataChan:
+				data, err := a.prepareDataForSend(batchData, idSender)
+				if err != nil {
+					log.Printf("sender %d, failure prepare data for send, err: %s", idSender, err)
+					continue
 				}
 
-				continue
+				var errSending error
+				for i := 1; i <= AttemptCount; i++ {
+					_, errSending = a.send(data)
+					if errSending != nil {
+						log.Printf("sender %d, attempt%d send metrics, err: %s", idSender, i, errSending)
+
+						if i < AttemptCount {
+							time.Sleep(time.Duration(2*i-1) * time.Second)
+						}
+
+						continue
+					}
+
+					break
+				}
+
+				if errSending != nil {
+					log.Printf("sender %d, failure send metrics", idSender)
+				}
+			default:
 			}
-
-			break
-		}
-
-		if errSending != nil {
-			log.Printf("sender %d, failure send metrics", idSender)
 		}
 	}
 }
 
-func (a *agent) workSenders() {
-	defer close(a.dataChan)
+// prepareDataForSend готовит данные для отправки на сервер.
+func (a *agent) prepareDataForSend(batchData []metrics.Metrics, idSender int) ([]byte, error) {
+	data, err := json.Marshal(batchData)
+	if err != nil {
+		return data, fmt.Errorf("error by json-encode metrics: %s, err: %w", batchData, err)
+	}
 
+	dataEncrypted, err := mycrypto.Encrypting(data, flags.CryptoKey)
+	if err != nil {
+		return data, fmt.Errorf("error by encrypting data: %s, err: %w", data, err)
+	}
+
+	dataCompress, err := a.Compress(dataEncrypted)
+	if err != nil {
+		return data, fmt.Errorf("error by compress data: %s, err: %w", data, err)
+	}
+
+	return dataCompress, nil
+}
+
+func (a *agent) workSenders() {
 	ticker := time.Tick(time.Second * time.Duration(flags.ReportInterval))
 
 	for {
@@ -183,6 +209,42 @@ func (a *agent) printBuildInfo() {
 	fmt.Printf("Build commit: %s\n", buildCommit)
 }
 
+// catchTerminateSignal ловит сигналы ОС для корректной остановки агента.
+func (a *agent) catchTerminateSignal() error {
+	terminateSignals := make(chan os.Signal, 1)
+
+	signal.Notify(terminateSignals, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	<-terminateSignals
+
+	if err := a.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Close отвечает за корректную остановку агента.
+func (a *agent) Close() error {
+	a.stopSenders()
+
+	close(a.dataChan)
+
+	log.Println("Successful stop agent")
+
+	return nil
+}
+
+// stopSenders останавливает воркеры.
+func (a *agent) stopSenders() {
+	log.Println("Waiting closing all senders")
+
+	close(a.closeSenderChan)
+	a.wg.Wait()
+
+	log.Println("All senders are stopped!")
+}
+
 func main() {
 	agent := NewAgent()
 	agent.printBuildInfo()
@@ -193,8 +255,13 @@ func main() {
 	go agent.getOtherMetrics()
 
 	for w := 1; w <= flags.RateLimit; w++ {
+		agent.wg.Add(1)
 		go agent.sender(w)
 	}
 
-	agent.workSenders()
+	go agent.workSenders()
+
+	if err := agent.catchTerminateSignal(); err != nil {
+		log.Fatal(err)
+	}
 }
