@@ -154,7 +154,7 @@ func (a *agent) sender(idSender int) {
 func (a *agent) prepareDataForSend(batchData []metrics.Metrics, idSender int) ([]byte, error) {
 	data, err := json.Marshal(batchData)
 	if err != nil {
-		return data, fmt.Errorf("error by json-encode metrics: %s, err: %w", batchData, err)
+		return data, fmt.Errorf("error by json-encode metrics: %w", err)
 	}
 
 	dataEncrypted, err := mycrypto.Encrypting(data, flags.CryptoKey)

@@ -56,7 +56,7 @@ func run() error {
 		return err
 	}
 
-	srv := prepareHttpServer(appStorage)
+	srv := prepareHTTPServer(appStorage)
 
 	go intervalSaveToFile(appStorage)
 	go startServer(srv)
@@ -65,8 +65,8 @@ func run() error {
 	return catchTerminateSignal(appStorage, srv)
 }
 
-// prepareHttpServer создает http-сервер.
-func prepareHttpServer(appStorage storage.Repository) *http.Server {
+// prepareHTTPServer создает http-сервер.
+func prepareHTTPServer(appStorage storage.Repository) *http.Server {
 	handler := mycrypto.Middleware(server.GetRouter(appStorage))
 	handler = gzip.Middleware(handler)
 	handler = signature.Middleware(handler)
@@ -109,7 +109,7 @@ func catchTerminateSignal(appStorage storage.Repository, srv *http.Server) error
 
 	<-terminateSignals
 
-	if err := shutdownHttpServer(srv); err != nil {
+	if err := shutdownHTTPServer(srv); err != nil {
 		return err
 	}
 
@@ -124,8 +124,8 @@ func catchTerminateSignal(appStorage storage.Repository, srv *http.Server) error
 	return nil
 }
 
-// shutdownHttpServer корректно останавливает http-сервер.
-func shutdownHttpServer(srv *http.Server) error {
+// shutdownHTTPServer корректно останавливает http-сервер.
+func shutdownHTTPServer(srv *http.Server) error {
 	shutdownCtx, shutdownRelease := context.WithCancel(context.TODO())
 	defer shutdownRelease()
 
