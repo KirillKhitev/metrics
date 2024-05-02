@@ -153,6 +153,8 @@ func (s *MemStorage) GetGaugeList(ctx context.Context) map[string]float64 {
 }
 
 func (s *MemStorage) Close() error {
+	logger.Log.Info("The Storage does not need to be closed")
+
 	return nil
 }
 

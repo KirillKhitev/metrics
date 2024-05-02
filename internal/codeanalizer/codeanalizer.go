@@ -3,6 +3,8 @@ package codeanalizer
 
 import (
 	"go/ast"
+	"strings"
+
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/asmdecl"
 	"golang.org/x/tools/go/analysis/passes/assign"
@@ -50,7 +52,6 @@ import (
 	"golang.org/x/tools/go/analysis/passes/usesgenerics"
 	"honnef.co/go/tools/simple"
 	"honnef.co/go/tools/staticcheck"
-	"strings"
 )
 
 // ExitOnMainAnalyzer - кастомный анализатор, осуществляет проверку, что в функции main пакета main нет вызова os.Exit.

@@ -279,8 +279,9 @@ To select specific analyzers, use the -NAME flag for each one, or -NAME=false to
 package main
 
 import (
-	"github.com/KirillKhitev/metrics/internal/codeanalizer"
 	"golang.org/x/tools/go/analysis/multichecker"
+
+	"github.com/KirillKhitev/metrics/internal/codeanalizer"
 )
 
 func main() {

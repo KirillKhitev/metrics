@@ -490,6 +490,8 @@ func (s *DBStorage) TrySaveToFile() error {
 func (s *DBStorage) Close() error {
 	s.db.Close()
 
+	logger.Log.Info("Close Storage")
+
 	return nil
 }
 
