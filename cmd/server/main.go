@@ -11,16 +11,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/KirillKhitev/metrics/internal/mycrypto"
-
 	"go.uber.org/zap"
 
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/gzip"
 	"github.com/KirillKhitev/metrics/internal/logger"
+	"github.com/KirillKhitev/metrics/internal/mycrypto"
 	"github.com/KirillKhitev/metrics/internal/server"
 	"github.com/KirillKhitev/metrics/internal/signature"
 	"github.com/KirillKhitev/metrics/internal/storage"
+	"github.com/KirillKhitev/metrics/internal/subnet"
 )
 
 // Флаги сборки
@@ -67,7 +67,8 @@ func run() error {
 
 // prepareHTTPServer создает http-сервер.
 func prepareHTTPServer(appStorage storage.Repository) *http.Server {
-	handler := mycrypto.Middleware(server.GetRouter(appStorage))
+	handler := subnet.Middleware(server.GetRouter(appStorage))
+	handler = mycrypto.Middleware(handler)
 	handler = gzip.Middleware(handler)
 	handler = signature.Middleware(handler)
 

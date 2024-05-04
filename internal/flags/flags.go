@@ -22,6 +22,7 @@ type FlagsServer struct {
 	AddrPprof          string `json:"address_pprof,omitempty"` // Адрес и порт для профилировщика
 	CryptoKey          string `json:"crypto_key"`              // Путь до файла с приватным ключом
 	Config             string `json:"config,omitempty"`        // Путь до файла конфигурации
+	TrustedSubnet      string `json:"trusted_subnet"`          // Доверенная подсеть в виде CIDR
 }
 
 // Parse разбирает аргументы запуска приложения в переменнную Args.
@@ -37,6 +38,7 @@ func (f *FlagsServer) Parse() {
 	flag.StringVar(&f.Key, "k", "", "key for signature request data")
 	flag.StringVar(&f.AddrPprof, "p", ":8090", "address and port to pprof server")
 	flag.StringVar(&f.CryptoKey, "crypto-key", "", "path to private key file")
+	flag.StringVar(&f.TrustedSubnet, "t", "", "trusted subnet (CIDR)")
 	flag.Parse()
 
 	f.updateFromConfig(map[string]string{
@@ -99,6 +101,10 @@ func (f *FlagsServer) updateFromConfig(d map[string]string) {
 	if f.CryptoKey == "" {
 		f.CryptoKey = config.CryptoKey
 	}
+
+	if f.TrustedSubnet == "" {
+		f.TrustedSubnet = config.TrustedSubnet
+	}
 }
 
 // updateFromEnvironments обновляем настройки из переменных среды.
@@ -141,6 +147,10 @@ func (f *FlagsServer) updateFromEnvironments() {
 
 	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
 		f.CryptoKey = envCryptoKey
+	}
+
+	if envTrustedSubnet := os.Getenv("TRUSTED_SUBNET"); envTrustedSubnet != "" {
+		f.TrustedSubnet = envTrustedSubnet
 	}
 }
 
