@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"runtime"
@@ -16,13 +17,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/KirillKhitev/metrics/internal/mycrypto"
-
 	"github.com/go-resty/resty/v2"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 
 	"github.com/KirillKhitev/metrics/internal/metrics"
+	"github.com/KirillKhitev/metrics/internal/mycrypto"
 	"github.com/KirillKhitev/metrics/internal/signature"
 )
 
@@ -157,7 +157,7 @@ func (a *agent) prepareDataForSend(batchData []metrics.Metrics, idSender int) ([
 		return data, fmt.Errorf("error by json-encode metrics: %w", err)
 	}
 
-	dataEncrypted, err := mycrypto.Encrypting(data, flags.CryptoKey)
+	dataEncrypted, err := mycrypto.Encrypt(data, flags.CryptoKey)
 	if err != nil {
 		return data, fmt.Errorf("error by encrypting data: %s, err: %w", data, err)
 	}
@@ -188,9 +188,15 @@ func (a *agent) workSenders() {
 func (a *agent) send(data []byte) (*resty.Response, error) {
 	url := fmt.Sprintf("http://%s/updates/", flags.AddrRun)
 
+	ip, err := a.prepareIP()
+	if err != nil {
+		return nil, err
+	}
+
 	request := a.client.NewRequest().
 		SetBody(data).
-		SetHeader("Content-Encoding", "gzip")
+		SetHeader("Content-Encoding", "gzip").
+		SetHeader("X-Real-IP", ip)
 
 	if flags.Key != "" {
 		hashSum := signature.GetHash(data, flags.Key)
@@ -243,6 +249,28 @@ func (a *agent) stopSenders() {
 	a.wg.Wait()
 
 	log.Println("All senders are stopped!")
+}
+
+func (a *agent) prepareIP() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return ``, err
+	}
+
+	for _, i := range interfaces {
+		addrs, err := i.Addrs()
+		if err != nil {
+			return ``, err
+		}
+
+		for _, addr := range addrs {
+			if ip, ok := addr.(*net.IPNet); ok && ip.Mask.String() == `ffffff00` && ip.IP.IsPrivate() {
+				return ip.IP.String(), nil
+			}
+		}
+	}
+
+	return ``, nil
 }
 
 func main() {

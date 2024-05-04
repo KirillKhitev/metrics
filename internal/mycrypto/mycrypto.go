@@ -17,8 +17,8 @@ import (
 	"github.com/KirillKhitev/metrics/internal/flags"
 )
 
-// Encrypting шифрует тело запроса используя публичный ключ
-func Encrypting(data []byte, keyFilePath string) ([]byte, error) {
+// Encrypt шифрует тело запроса используя публичный ключ
+func Encrypt(data []byte, keyFilePath string) ([]byte, error) {
 	result := []byte{}
 
 	if keyFilePath == "" {
@@ -48,8 +48,8 @@ func Encrypting(data []byte, keyFilePath string) ([]byte, error) {
 	return result, nil
 }
 
-// Decripting расшифровывает тело запроса используя приватный ключ.
-func Decrypting(data []byte, keyFilePath string) ([]byte, error) {
+// Decrypt расшифровывает тело запроса используя приватный ключ.
+func Decrypt(data []byte, keyFilePath string) ([]byte, error) {
 	result := []byte{}
 
 	if keyFilePath == "" {
@@ -85,7 +85,7 @@ func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 
-		bodyDecrypted, err := Decrypting(body, flags.Args.CryptoKey)
+		bodyDecrypted, err := Decrypt(body, flags.Args.CryptoKey)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
