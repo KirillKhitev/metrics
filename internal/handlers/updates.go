@@ -34,7 +34,13 @@ func (ch *UpdatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	counters, gauges, err := ch.getDataFromRequest(r)
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	counters, gauges, err := metrics.GetMetricsFromBytes(data)
 	if err != nil {
 		logger.Log.Error("cannot decode request JSON body", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -132,32 +138,4 @@ func (ch *UpdatesHandler) prepareResponseGauges(response []metrics.Metrics, r *h
 	}
 
 	return response, nil
-}
-
-// getDataFromRequest формирует список метрик из Запроса.
-func (ch *UpdatesHandler) getDataFromRequest(r *http.Request) ([]metrics.Metrics, []metrics.Metrics, error) {
-	var request []metrics.Metrics
-
-	counters := []metrics.Metrics{}
-	gauges := []metrics.Metrics{}
-
-	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(&request); err != nil && err != io.EOF {
-		return counters, gauges, err
-	}
-
-	for _, metrica := range request {
-		if metrica.MType == "" || metrica.ID == "" || (metrica.Value == nil && metrica.Delta == nil) {
-			continue
-		}
-
-		switch metrica.MType {
-		case "counter":
-			counters = append(counters, metrica)
-		case "gauge":
-			gauges = append(gauges, metrica)
-		}
-	}
-
-	return counters, gauges, nil
 }

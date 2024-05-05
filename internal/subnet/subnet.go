@@ -43,3 +43,25 @@ func Middleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func GetIP() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return ``, err
+	}
+
+	for _, i := range interfaces {
+		addrs, err := i.Addrs()
+		if err != nil {
+			return ``, err
+		}
+
+		for _, addr := range addrs {
+			if ip, ok := addr.(*net.IPNet); ok && ip.Mask.String() == `ffffff00` && ip.IP.IsPrivate() {
+				return ip.IP.String(), nil
+			}
+		}
+	}
+
+	return ``, nil
+}

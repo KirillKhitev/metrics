@@ -1,5 +1,6 @@
 {
   "address": "localhost:8080",
+  "address_grpc": ":3200",
   "restore": true,
   "store_interval": 1,
   "store_file": "./metrics.json",

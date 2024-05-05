@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package mygrpc;
+
+option go_package = "internal/mygrpc/proto";
+
+message Request {
+  bytes data = 1;
+}
+
+message UpdatesResponse {
+  bytes data = 1;
+}
+
+service Metrics {
+  rpc UpdatesMetrics (Request) returns (UpdatesResponse);
+}

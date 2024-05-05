@@ -6,10 +6,10 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/signal"
 	"runtime"
@@ -17,13 +17,20 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/KirillKhitev/metrics/internal/signature"
+	"github.com/KirillKhitev/metrics/internal/subnet"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
+	"google.golang.org/grpc"
+
+	"github.com/KirillKhitev/metrics/internal/flags"
+	"github.com/KirillKhitev/metrics/internal/mygrpc"
+	pb "github.com/KirillKhitev/metrics/internal/mygrpc/proto"
 
 	"github.com/KirillKhitev/metrics/internal/metrics"
 	"github.com/KirillKhitev/metrics/internal/mycrypto"
-	"github.com/KirillKhitev/metrics/internal/signature"
 )
 
 // AttemptCount определяет количество попыток отправки данных на сервер
@@ -37,6 +44,8 @@ var (
 )
 
 type agent struct {
+	gRPCConn        *grpc.ClientConn
+	gRPCClient      pb.MetricsClient
 	client          *resty.Client
 	runtimeStats    runtime.MemStats
 	memStats        mem.SwapMemoryStat
@@ -49,7 +58,14 @@ type agent struct {
 
 // NewAgent конструктор главной структуры приложения Агента.
 func NewAgent() *agent {
+	conn, err := mygrpc.PrepareClientConnection()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return &agent{
+		gRPCConn:        conn,
+		gRPCClient:      mygrpc.PrepareClient(conn),
 		client:          resty.New(),
 		runtimeStats:    runtime.MemStats{},
 		memStats:        mem.SwapMemoryStat{},
@@ -79,7 +95,7 @@ func (a *agent) Compress(data []byte) ([]byte, error) {
 }
 
 func (a *agent) getMetricsFromRuntime() {
-	ticker := time.Tick(time.Second * time.Duration(flags.PollInterval))
+	ticker := time.Tick(time.Second * time.Duration(flags.ArgsClient.PollInterval))
 
 	for {
 		<-ticker
@@ -89,7 +105,7 @@ func (a *agent) getMetricsFromRuntime() {
 }
 
 func (a *agent) getOtherMetrics() {
-	ticker := time.Tick(time.Second * time.Duration(flags.PollInterval))
+	ticker := time.Tick(time.Second * time.Duration(flags.ArgsClient.PollInterval))
 
 	for {
 		<-ticker
@@ -127,7 +143,7 @@ func (a *agent) sender(idSender int) {
 
 				var errSending error
 				for i := 1; i <= AttemptCount; i++ {
-					_, errSending = a.send(data)
+					errSending = a.send(data)
 					if errSending != nil {
 						log.Printf("sender %d, attempt%d send metrics, err: %s", idSender, i, errSending)
 
@@ -157,7 +173,7 @@ func (a *agent) prepareDataForSend(batchData []metrics.Metrics, idSender int) ([
 		return data, fmt.Errorf("error by json-encode metrics: %w", err)
 	}
 
-	dataEncrypted, err := mycrypto.Encrypt(data, flags.CryptoKey)
+	dataEncrypted, err := mycrypto.Encrypt(data, flags.ArgsClient.CryptoKey)
 	if err != nil {
 		return data, fmt.Errorf("error by encrypting data: %s, err: %w", data, err)
 	}
@@ -171,7 +187,7 @@ func (a *agent) prepareDataForSend(batchData []metrics.Metrics, idSender int) ([
 }
 
 func (a *agent) workSenders() {
-	ticker := time.Tick(time.Second * time.Duration(flags.ReportInterval))
+	ticker := time.Tick(time.Second * time.Duration(flags.ArgsClient.ReportInterval))
 
 	for {
 		<-ticker
@@ -185,12 +201,20 @@ func (a *agent) workSenders() {
 	}
 }
 
-func (a *agent) send(data []byte) (*resty.Response, error) {
-	url := fmt.Sprintf("http://%s/updates/", flags.AddrRun)
+func (a *agent) send(data []byte) error {
+	if flags.ArgsClient.GRPC {
+		_, err := a.gRPCClient.UpdatesMetrics(context.Background(), &pb.Request{
+			Data: data,
+		})
 
-	ip, err := a.prepareIP()
+		return err
+	}
+
+	url := fmt.Sprintf("http://%s/updates/", flags.ArgsClient.AddrRun)
+
+	ip, err := subnet.GetIP()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	request := a.client.NewRequest().
@@ -198,14 +222,14 @@ func (a *agent) send(data []byte) (*resty.Response, error) {
 		SetHeader("Content-Encoding", "gzip").
 		SetHeader("X-Real-IP", ip)
 
-	if flags.Key != "" {
-		hashSum := signature.GetHash(data, flags.Key)
+	if flags.ArgsClient.Key != "" {
+		hashSum := signature.GetHash(data, flags.ArgsClient.Key)
 		request.SetHeader("HashSHA256", hashSum)
 	}
 
-	resp, err := request.Post(url)
+	_, err = request.Post(url)
 
-	return resp, err
+	return err
 }
 
 // printBuildInfo выводит в консоль информацию по сборке.
@@ -235,6 +259,10 @@ func (a *agent) Close() error {
 	a.stopSenders()
 
 	close(a.dataChan)
+	log.Println("Close data-channel")
+
+	a.gRPCConn.Close()
+	log.Println("Close gRPC-connection")
 
 	log.Println("Successful stop agent")
 
@@ -251,38 +279,16 @@ func (a *agent) stopSenders() {
 	log.Println("All senders are stopped!")
 }
 
-func (a *agent) prepareIP() (string, error) {
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return ``, err
-	}
-
-	for _, i := range interfaces {
-		addrs, err := i.Addrs()
-		if err != nil {
-			return ``, err
-		}
-
-		for _, addr := range addrs {
-			if ip, ok := addr.(*net.IPNet); ok && ip.Mask.String() == `ffffff00` && ip.IP.IsPrivate() {
-				return ip.IP.String(), nil
-			}
-		}
-	}
-
-	return ``, nil
-}
-
 func main() {
+	flags.ArgsClient.ParseFlags()
+
 	agent := NewAgent()
 	agent.printBuildInfo()
-
-	flags.ParseFlags()
 
 	go agent.getMetricsFromRuntime()
 	go agent.getOtherMetrics()
 
-	for w := 1; w <= flags.RateLimit; w++ {
+	for w := 1; w <= flags.ArgsClient.RateLimit; w++ {
 		agent.wg.Add(1)
 		go agent.sender(w)
 	}
