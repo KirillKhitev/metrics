@@ -75,7 +75,7 @@ func (c *RestyClient) prepareDataForSend(data []metrics.Metrics) ([]byte, error)
 
 	dataCompress, err := c.Compress(dataEncrypted)
 	if err != nil {
-		return dataCompress, fmt.Errorf("error by compress data: %s, err: %w", data, err)
+		return dataCompress, fmt.Errorf("error by compress data: %s, err: %w", dataJSON, err)
 	}
 
 	return dataCompress, nil
