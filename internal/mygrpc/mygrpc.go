@@ -4,15 +4,17 @@ import (
 	"context"
 	"net"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/logger"
 	"github.com/KirillKhitev/metrics/internal/metrics"
+
 	pb "github.com/KirillKhitev/metrics/internal/mygrpc/proto"
 	"github.com/KirillKhitev/metrics/internal/storage"
 )
@@ -25,11 +27,7 @@ type MetricsServer struct {
 func (s *MetricsServer) UpdatesMetrics(ctx context.Context, in *pb.Request) (*pb.UpdatesResponse, error) {
 	var response pb.UpdatesResponse
 
-	counters, gauges, err := metrics.GetMetricsFromBytes(in.Data)
-	if err != nil {
-		logger.Log.Error("cannot decode request JSON body", zap.Error(err))
-		return &response, err
-	}
+	counters, gauges := sortMetrics(in.Metrics)
 
 	if errUpdate := s.storage.UpdateCounters(ctx, counters); errUpdate != nil {
 		return &response, status.Error(codes.Aborted, "wrong data")
@@ -43,18 +41,40 @@ func (s *MetricsServer) UpdatesMetrics(ctx context.Context, in *pb.Request) (*pb
 }
 
 func PrepareServer(appStorage storage.Repository) *grpc.Server {
-	s := grpc.NewServer(grpc.ChainUnaryInterceptor(
-		serverIPInterceptor,
-		serverSignatureInterceptor,
-		serverGzipInterceptor,
-		serverDecryptInterceptor,
-	))
+	s := grpc.NewServer(grpc.UnaryInterceptor(serverIPInterceptor))
 
 	pb.RegisterMetricsServer(s, &MetricsServer{
 		storage: appStorage,
 	})
 
+	reflection.Register(s)
+
 	return s
+}
+
+func sortMetrics(request []*pb.Metrica) (counters, gauges []metrics.Metrics) {
+	for _, metrica := range request {
+		switch metrica.Mtype {
+		case pb.Metrica_COUNTER:
+			v := metrica.GetDelta()
+			m := metrics.Metrics{
+				ID:    metrica.GetId(),
+				MType: "counter",
+				Delta: &v,
+			}
+			counters = append(counters, m)
+		case pb.Metrica_GAUGE:
+			v := metrica.GetValue()
+			m := metrics.Metrics{
+				ID:    metrica.GetId(),
+				MType: "gauge",
+				Value: &v,
+			}
+			gauges = append(gauges, m)
+		}
+	}
+
+	return counters, gauges
 }
 
 func StartServer(s *grpc.Server) error {
@@ -75,13 +95,7 @@ func ShutdownServer(s *grpc.Server) {
 func PrepareClientConnection() (*grpc.ClientConn, error) {
 	return grpc.Dial(flags.ArgsClient.AddrRun,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithChainUnaryInterceptor(
-			clientIPInterceptor,
-			clientSignatureInterceptor,
-		),
+		grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)),
+		grpc.WithUnaryInterceptor(clientIPInterceptor),
 	)
-}
-
-func PrepareClient(conn *grpc.ClientConn) pb.MetricsClient {
-	return pb.NewMetricsClient(conn)
 }

@@ -4,10 +4,7 @@
 package main
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -17,20 +14,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/KirillKhitev/metrics/internal/signature"
-	"github.com/KirillKhitev/metrics/internal/subnet"
+	"github.com/KirillKhitev/metrics/internal/client"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
-	"google.golang.org/grpc"
 
 	"github.com/KirillKhitev/metrics/internal/flags"
-	"github.com/KirillKhitev/metrics/internal/mygrpc"
-	pb "github.com/KirillKhitev/metrics/internal/mygrpc/proto"
-
 	"github.com/KirillKhitev/metrics/internal/metrics"
-	"github.com/KirillKhitev/metrics/internal/mycrypto"
 )
 
 // AttemptCount определяет количество попыток отправки данных на сервер
@@ -44,9 +34,7 @@ var (
 )
 
 type agent struct {
-	gRPCConn        *grpc.ClientConn
-	gRPCClient      pb.MetricsClient
-	client          *resty.Client
+	client          client.Client
 	runtimeStats    runtime.MemStats
 	memStats        mem.SwapMemoryStat
 	cpuStats        []float64
@@ -57,41 +45,22 @@ type agent struct {
 }
 
 // NewAgent конструктор главной структуры приложения Агента.
-func NewAgent() *agent {
-	conn, err := mygrpc.PrepareClientConnection()
+func NewAgent() (*agent, error) {
+	client, err := newClient()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return &agent{
-		gRPCConn:        conn,
-		gRPCClient:      mygrpc.PrepareClient(conn),
-		client:          resty.New(),
+	a := &agent{
+		client:          client,
 		runtimeStats:    runtime.MemStats{},
 		memStats:        mem.SwapMemoryStat{},
 		dataChan:        make(chan []metrics.Metrics),
 		closeSenderChan: make(chan struct{}),
 		wg:              &sync.WaitGroup{},
 	}
-}
 
-// Compress сжимает данные перед отправкой на сервер.
-func (a *agent) Compress(data []byte) ([]byte, error) {
-	var b bytes.Buffer
-
-	w := gzip.NewWriter(&b)
-
-	_, err := w.Write(data)
-	if err != nil {
-		return nil, fmt.Errorf("failed write data to compress temporary buffer: %v", err)
-	}
-
-	err = w.Close()
-	if err != nil {
-		return nil, fmt.Errorf("failed compress data: %v", err)
-	}
-
-	return b.Bytes(), nil
+	return a, nil
 }
 
 func (a *agent) getMetricsFromRuntime() {
@@ -125,7 +94,7 @@ func (a *agent) getOtherMetrics() {
 	}
 }
 
-func (a *agent) sender(idSender int) {
+func (a *agent) sender(ctx context.Context, idSender int) {
 	for {
 		select {
 		case <-a.closeSenderChan:
@@ -135,15 +104,9 @@ func (a *agent) sender(idSender int) {
 		default:
 			select {
 			case batchData := <-a.dataChan:
-				data, err := a.prepareDataForSend(batchData, idSender)
-				if err != nil {
-					log.Printf("sender %d, failure prepare data for send, err: %s", idSender, err)
-					continue
-				}
-
 				var errSending error
 				for i := 1; i <= AttemptCount; i++ {
-					errSending = a.send(data)
+					errSending = a.client.Send(ctx, batchData)
 					if errSending != nil {
 						log.Printf("sender %d, attempt%d send metrics, err: %s", idSender, i, errSending)
 
@@ -166,26 +129,6 @@ func (a *agent) sender(idSender int) {
 	}
 }
 
-// prepareDataForSend готовит данные для отправки на сервер.
-func (a *agent) prepareDataForSend(batchData []metrics.Metrics, idSender int) ([]byte, error) {
-	data, err := json.Marshal(batchData)
-	if err != nil {
-		return data, fmt.Errorf("error by json-encode metrics: %w", err)
-	}
-
-	dataEncrypted, err := mycrypto.Encrypt(data, flags.ArgsClient.CryptoKey)
-	if err != nil {
-		return data, fmt.Errorf("error by encrypting data: %s, err: %w", data, err)
-	}
-
-	dataCompress, err := a.Compress(dataEncrypted)
-	if err != nil {
-		return data, fmt.Errorf("error by compress data: %s, err: %w", data, err)
-	}
-
-	return dataCompress, nil
-}
-
 func (a *agent) workSenders() {
 	ticker := time.Tick(time.Second * time.Duration(flags.ArgsClient.ReportInterval))
 
@@ -199,37 +142,6 @@ func (a *agent) workSenders() {
 
 		a.dataChan <- data
 	}
-}
-
-func (a *agent) send(data []byte) error {
-	if flags.ArgsClient.GRPC {
-		_, err := a.gRPCClient.UpdatesMetrics(context.Background(), &pb.Request{
-			Data: data,
-		})
-
-		return err
-	}
-
-	url := fmt.Sprintf("http://%s/updates/", flags.ArgsClient.AddrRun)
-
-	ip, err := subnet.GetIP()
-	if err != nil {
-		return err
-	}
-
-	request := a.client.NewRequest().
-		SetBody(data).
-		SetHeader("Content-Encoding", "gzip").
-		SetHeader("X-Real-IP", ip)
-
-	if flags.ArgsClient.Key != "" {
-		hashSum := signature.GetHash(data, flags.ArgsClient.Key)
-		request.SetHeader("HashSHA256", hashSum)
-	}
-
-	_, err = request.Post(url)
-
-	return err
 }
 
 // printBuildInfo выводит в консоль информацию по сборке.
@@ -261,8 +173,7 @@ func (a *agent) Close() error {
 	close(a.dataChan)
 	log.Println("Close data-channel")
 
-	a.gRPCConn.Close()
-	log.Println("Close gRPC-connection")
+	a.client.Close()
 
 	log.Println("Successful stop agent")
 
@@ -282,15 +193,21 @@ func (a *agent) stopSenders() {
 func main() {
 	flags.ArgsClient.ParseFlags()
 
-	agent := NewAgent()
+	agent, err := NewAgent()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	agent.printBuildInfo()
 
 	go agent.getMetricsFromRuntime()
 	go agent.getOtherMetrics()
 
+	ctx := context.Background()
+
 	for w := 1; w <= flags.ArgsClient.RateLimit; w++ {
 		agent.wg.Add(1)
-		go agent.sender(w)
+		go agent.sender(ctx, w)
 	}
 
 	go agent.workSenders()
@@ -298,4 +215,12 @@ func main() {
 	if err := agent.catchTerminateSignal(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func newClient() (client.Client, error) {
+	if flags.ArgsClient.GRPC {
+		return client.NewGRPCClient()
+	}
+
+	return client.NewRestyClient()
 }
