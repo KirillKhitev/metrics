@@ -11,16 +11,20 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/KirillKhitev/metrics/internal/mycrypto"
+	"google.golang.org/grpc"
+
+	"github.com/KirillKhitev/metrics/internal/mygrpc"
 
 	"go.uber.org/zap"
 
 	"github.com/KirillKhitev/metrics/internal/flags"
 	"github.com/KirillKhitev/metrics/internal/gzip"
 	"github.com/KirillKhitev/metrics/internal/logger"
+	"github.com/KirillKhitev/metrics/internal/mycrypto"
 	"github.com/KirillKhitev/metrics/internal/server"
 	"github.com/KirillKhitev/metrics/internal/signature"
 	"github.com/KirillKhitev/metrics/internal/storage"
+	"github.com/KirillKhitev/metrics/internal/subnet"
 )
 
 // Флаги сборки
@@ -56,18 +60,21 @@ func run() error {
 		return err
 	}
 
-	srv := prepareHTTPServer(appStorage)
+	srvHTTP := prepareHTTPServer(appStorage)
+	srvGRPC := mygrpc.PrepareServer(appStorage)
 
 	go intervalSaveToFile(appStorage)
-	go startServer(srv)
+	go startHTTPServer(srvHTTP)
+	go mygrpc.StartServer(srvGRPC)
 	go startServerPprof()
 
-	return catchTerminateSignal(appStorage, srv)
+	return catchTerminateSignal(appStorage, srvHTTP, srvGRPC)
 }
 
 // prepareHTTPServer создает http-сервер.
 func prepareHTTPServer(appStorage storage.Repository) *http.Server {
-	handler := mycrypto.Middleware(server.GetRouter(appStorage))
+	handler := subnet.Middleware(server.GetRouter(appStorage))
+	handler = mycrypto.Middleware(handler)
 	handler = gzip.Middleware(handler)
 	handler = signature.Middleware(handler)
 
@@ -79,8 +86,8 @@ func prepareHTTPServer(appStorage storage.Repository) *http.Server {
 	return srv
 }
 
-// startServer запускает http-сервер.
-func startServer(srv *http.Server) error {
+// startHTTPServer запускает HTTP-сервер.
+func startHTTPServer(srv *http.Server) error {
 	logger.Log.Info("Running server", zap.String("address", flags.Args.AddrRun))
 
 	return srv.ListenAndServe()
@@ -102,16 +109,18 @@ func intervalSaveToFile(appStorage storage.Repository) {
 }
 
 // catchTerminateSignal ловит сигналы ОС для корректной остановки приложения.
-func catchTerminateSignal(appStorage storage.Repository, srv *http.Server) error {
+func catchTerminateSignal(appStorage storage.Repository, srvHTTP *http.Server, srvGRPC *grpc.Server) error {
 	terminateSignals := make(chan os.Signal, 1)
 
 	signal.Notify(terminateSignals, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	<-terminateSignals
 
-	if err := shutdownHTTPServer(srv); err != nil {
-		return err
+	if err := shutdownHTTPServer(srvHTTP); err != nil {
+		logger.Log.Error("Error by shutdown HTTP-server", zap.Error(err))
 	}
+
+	mygrpc.ShutdownServer(srvGRPC)
 
 	if err := appStorage.TrySaveToFile(); err != nil {
 		logger.Log.Error("Error by save metrics to file", zap.Error(err))

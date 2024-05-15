@@ -2,7 +2,10 @@
 package metrics
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"reflect"
 	"runtime"
@@ -133,4 +136,31 @@ type Metrics struct {
 	MType string   `json:"type"`            // Тип, возможные значения: counter, gauge
 	Delta *int64   `json:"delta,omitempty"` // Значение (для типа counter)
 	Value *float64 `json:"value,omitempty"` // Значение (для типа gauge)
+}
+
+func GetMetricsFromBytes(data []byte) ([]Metrics, []Metrics, error) {
+	var request []Metrics
+
+	counters := []Metrics{}
+	gauges := []Metrics{}
+
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if err := dec.Decode(&request); err != nil && err != io.EOF {
+		return counters, gauges, err
+	}
+
+	for _, metrica := range request {
+		if metrica.MType == "" || metrica.ID == "" || (metrica.Value == nil && metrica.Delta == nil) {
+			continue
+		}
+
+		switch metrica.MType {
+		case "counter":
+			counters = append(counters, metrica)
+		case "gauge":
+			gauges = append(gauges, metrica)
+		}
+	}
+
+	return counters, gauges, nil
 }

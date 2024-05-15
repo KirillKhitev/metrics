@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package mygrpc;
+
+option go_package = "internal/mygrpc/proto";
+
+message Metrica {
+  string id = 1;
+
+  enum MType {
+    COUNTER = 0;
+    GAUGE = 1;
+  }
+  MType mtype = 2;
+  int64 delta = 3;
+  double value = 4;
+}
+
+message Request {
+  repeated Metrica metrics = 1;
+}
+
+message UpdatesResponse {
+  bytes data = 1;
+}
+
+service Metrics {
+  rpc UpdatesMetrics (Request) returns (UpdatesResponse);
+}

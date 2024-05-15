@@ -1,9 +1,11 @@
 {
   "address": "localhost:8080",
+  "address_grpc": ":3200",
   "restore": true,
   "store_interval": 1,
   "store_file": "./metrics.json",
   "database_dsn": "host=localhost user=postgres password=pass dbname=testdb sslmode=disable",
   "crypto_key": "./key.rsa",
-  "address_pprof": ":8090"
+  "address_pprof": ":8090",
+  "trusted_subnet": ""
 }
